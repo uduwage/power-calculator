@@ -9,11 +9,16 @@ from power_calculator.binary_power import SampleSizeInput, calculate_sample_size
 from power_calculator.duration import estimate_duration_by_group
 
 
-def _to_probability(value: float, flag_name: str) -> float:
+def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> float:
     """Accept either 0-1 or 0-100 input and return 0-1 probability."""
     if value > 1:
         value = value / 100.0
-    if not (0 < value < 1):
+    if allow_one:
+        if not (0 < value <= 1):
+            raise ValueError(
+                f"{flag_name} must be > 0 and <= 1 (or 0 and 100 as percentage, allowing 100)."
+            )
+    elif not (0 < value < 1):
         raise ValueError(f"{flag_name} must be between 0 and 1 (or 0 and 100 as percentage).")
     return value
 
@@ -110,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.daily_users is not None:
             if args.daily_users <= 0:
                 raise ValueError("--daily-users must be positive.")
-            eligible_rate = _to_probability(args.eligible_rate, "--eligible-rate")
+            eligible_rate = _to_probability(args.eligible_rate, "--eligible-rate", allow_one=True)
             group_sample_sizes = {"control": result.control_sample_size}
             for idx in range(1, args.groups):
                 group_sample_sizes[f"treatment_{idx}"] = result.treatment_sample_size

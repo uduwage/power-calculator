@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "power-calculator"
+version = "0.1.0"
+description = "Power analysis and sample size calculator for A/B(/n) tests with binary metrics."
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/uduwage/power-calculator"
+repository = "https://github.com/uduwage/power-calculator"
+keywords = ["ab-test", "power-analysis", "statistics", "experiment", "sample-size"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics"
+]
+
+packages = [
+    { include = "power_calculator" }
+]
+
+[tool.poetry.scripts]
+power-calculator = "power_calculator.cli:main"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

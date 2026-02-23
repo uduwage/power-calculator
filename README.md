@@ -62,6 +62,30 @@ power-calculator --help
 python -m power_calculator.cli --help
 ```
 
+### Option 3: Docker
+
+Build image:
+
+```bash
+docker build -t power-calculator:latest .
+```
+
+Run help:
+
+```bash
+docker run --rm power-calculator:latest --help
+```
+
+Run a sample calculation:
+
+```bash
+docker run --rm power-calculator:latest \
+  --baseline-rate 10 \
+  --mde 2 \
+  --daily-users 5000 \
+  --eligible-rate 90
+```
+
 ## CLI Usage
 
 ### Minimal required command
@@ -206,6 +230,13 @@ Run tests:
 
 ```bash
 poetry run pytest
+```
+
+Build container with Make:
+
+```bash
+make docker.build
+make docker.run
 ```
 
 ## License

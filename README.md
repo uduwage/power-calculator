@@ -29,6 +29,23 @@ It helps you answer:
 - `power_calculator/duration.py`: consolidated duration calculations
 - `power_calculator/cli.py`: command-line interface
 
+## Repository Layout
+
+```text
+power-calculator/
+├── power_calculator/
+│   ├── __init__.py         # Public package exports
+│   ├── binary_power.py     # Binary metric sample-size calculations
+│   ├── duration.py         # Duration estimators (total/equal-group/by-group)
+│   └── cli.py              # CLI entrypoint and argument parsing
+├── pyproject.toml          # Poetry config, dependencies, tool settings
+├── Makefile                # Format/lint/docker helper commands
+├── Dockerfile              # Container image definition
+├── .dockerignore           # Docker build context exclusions
+├── README.md               # Usage and setup documentation
+└── LICENSE                 # Project license
+```
+
 ## Setup
 
 ### Prerequisites

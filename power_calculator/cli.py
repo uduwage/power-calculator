@@ -139,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.eligible_rate != 100.0:
             raise ValueError("--eligible-rate requires --daily-users.")
     except ValueError as exc:
-        parser.error(str(exc))
+        print(f"{parser.prog}: error: {exc}", file=sys.stderr)
         return 2
 
     print("Binary A/B(/n) Sample Size")

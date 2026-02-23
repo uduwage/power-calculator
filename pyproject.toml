@@ -2,7 +2,7 @@
 name = "power-calculator"
 version = "0.1.0"
 description = "Power analysis and sample size calculator for A/B(/n) tests with binary metrics."
-authors = ["Your Name <you@example.com>"]
+authors = ["uduwage"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/uduwage/power-calculator"

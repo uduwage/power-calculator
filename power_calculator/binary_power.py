@@ -49,6 +49,17 @@ class SampleSizeResult:
 
 
 def _parse_allocation(allocation: str) -> Tuple[float, float]:
+    """Parse a control:treatment allocation string.
+
+    Args:
+        allocation: Allocation text in `control:treatment` format.
+
+    Returns:
+        Normalized control and treatment shares that sum to 1.
+
+    Raises:
+        ValueError: If format is invalid or values are non-positive.
+    """
     try:
         control_text, treatment_text = allocation.split(":")
         control = float(control_text.strip())
@@ -64,6 +75,19 @@ def _parse_allocation(allocation: str) -> Tuple[float, float]:
 
 
 def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[float, int]:
+    """Apply multiple-testing correction to alpha.
+
+    Args:
+        alpha: Raw type I error rate.
+        groups: Total number of groups in the experiment.
+        correction: Correction method (`none`, `bonferroni`, `sidak`).
+
+    Returns:
+        Tuple of `(adjusted_alpha, comparisons)` where comparisons is `groups - 1`.
+
+    Raises:
+        ValueError: If correction method is unsupported.
+    """
     comparisons = max(groups - 1, 1)
     if correction == "none" or comparisons == 1:
         return alpha, comparisons
@@ -75,6 +99,18 @@ def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[
 
 
 def _critical_z(alpha: float, alternative: Alternative) -> float:
+    """Return critical z-value for the configured alternative hypothesis.
+
+    Args:
+        alpha: Type I error rate after correction.
+        alternative: `one-sided` or `two-sided`.
+
+    Returns:
+        Critical z-value.
+
+    Raises:
+        ValueError: If alternative is unsupported.
+    """
     if alternative == "two-sided":
         return _normal_ppf(1 - alpha / 2)
     if alternative == "one-sided":
@@ -86,6 +122,15 @@ def _normal_ppf(probability: float) -> float:
     """Inverse CDF for standard normal distribution.
 
     Rational approximation from Peter John Acklam's algorithm.
+
+    Args:
+        probability: Probability in the open interval `(0, 1)`.
+
+    Returns:
+        Standard normal quantile `z` such that `P(Z <= z) = probability`.
+
+    Raises:
+        ValueError: If probability is outside `(0, 1)`.
     """
 
     if not (0 < probability < 1):
@@ -152,6 +197,15 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     Uses the normal approximation for difference in two proportions.
     For ``groups > 2`` this assumes one control group and ``groups - 1``
     treatment groups compared pairwise to control.
+
+    Args:
+        config: Sample-size configuration for binary A/B(/n) calculation.
+
+    Returns:
+        Sample-size result including per-group and overall totals.
+
+    Raises:
+        ValueError: If configuration values are outside valid ranges.
     """
 
     if not (0 < config.confidence_level < 1):

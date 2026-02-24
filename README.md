@@ -29,6 +29,23 @@ It helps you answer:
 - `power_calculator/duration.py`: consolidated duration calculations
 - `power_calculator/cli.py`: command-line interface
 
+## Repository Layout
+
+```text
+power-calculator/
+├── power_calculator/
+│   ├── __init__.py         # Public package exports
+│   ├── binary_power.py     # Binary metric sample-size calculations
+│   ├── duration.py         # Duration estimators (total/equal-group/by-group)
+│   └── cli.py              # CLI entrypoint and argument parsing
+├── pyproject.toml          # Poetry config, dependencies, tool settings
+├── Makefile                # Format/lint/docker helper commands
+├── Dockerfile              # Container image definition
+├── .dockerignore           # Docker build context exclusions
+├── README.md               # Usage and setup documentation
+└── LICENSE                 # Project license
+```
+
 ## Setup
 
 ### Prerequisites
@@ -60,6 +77,30 @@ power-calculator --help
 
 ```bash
 python -m power_calculator.cli --help
+```
+
+### Option 3: Docker
+
+Build image:
+
+```bash
+docker build -t power-calculator:latest .
+```
+
+Run help:
+
+```bash
+docker run --rm power-calculator:latest --help
+```
+
+Run a sample calculation:
+
+```bash
+docker run --rm power-calculator:latest \
+  --baseline-rate 10 \
+  --mde 2 \
+  --daily-users 5000 \
+  --eligible-rate 90
 ```
 
 ## CLI Usage
@@ -206,6 +247,13 @@ Run tests:
 
 ```bash
 poetry run pytest
+```
+
+Build container with Make:
+
+```bash
+make docker.build
+make docker.run
 ```
 
 ## License

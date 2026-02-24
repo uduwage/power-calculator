@@ -10,7 +10,19 @@ from power_calculator.duration import estimate_duration_by_group
 
 
 def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> float:
-    """Accept either 0-1 or 0-100 input and return 0-1 probability."""
+    """Normalize probability-like CLI input to 0-1 scale.
+
+    Args:
+        value: Input value, either in 0-1 scale or 0-100 percent.
+        flag_name: Flag name for validation error messages.
+        allow_one: If true, accepts `1.0`/`100` as valid upper bound.
+
+    Returns:
+        Normalized probability value in 0-1 scale.
+
+    Raises:
+        ValueError: If value falls outside the allowed range.
+    """
     if value > 1:
         value = value / 100.0
     if allow_one:
@@ -24,6 +36,11 @@ def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> fl
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build CLI argument parser.
+
+    Returns:
+        Configured argument parser for the power calculator CLI.
+    """
     parser = argparse.ArgumentParser(
         prog="power-calculator",
         description="Binary metric sample size calculator for A/B(/n) tests.",
@@ -94,6 +111,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the CLI entrypoint.
+
+    Args:
+        argv: Optional explicit CLI args. Uses `sys.argv` when omitted.
+
+    Returns:
+        Exit code (`0` for success, `2` for validation failures).
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
 

@@ -26,6 +26,18 @@ class GroupDurationEstimate:
 
 
 def _validate_daily_inputs(daily_users: float, eligible_rate: float) -> float:
+    """Validate daily traffic inputs and return effective daily experiment traffic.
+
+    Args:
+        daily_users: Daily incoming user volume.
+        eligible_rate: Fraction of users eligible for the experiment.
+
+    Returns:
+        Daily eligible users after applying the eligibility rate.
+
+    Raises:
+        ValueError: If `daily_users` is not positive or `eligible_rate` is out of range.
+    """
     if daily_users <= 0:
         raise ValueError("daily_users must be positive.")
     if not (0 < eligible_rate <= 1):
@@ -36,7 +48,20 @@ def _validate_daily_inputs(daily_users: float, eligible_rate: float) -> float:
 def estimate_duration(
     total_sample_size: int, daily_users: float, eligible_rate: float = 1.0
 ) -> DurationEstimate:
-    """Estimate calendar days needed to collect a total required sample size."""
+    """Estimate days required to collect a total experiment sample size.
+
+    Args:
+        total_sample_size: Total users required across all groups.
+        daily_users: Daily incoming user volume.
+        eligible_rate: Fraction of users eligible for the experiment.
+
+    Returns:
+        A duration estimate containing total sample size, effective daily users,
+        and required days.
+
+    Raises:
+        ValueError: If inputs are outside valid ranges.
+    """
     if total_sample_size <= 0:
         raise ValueError("total_sample_size must be positive.")
 
@@ -55,7 +80,20 @@ def estimate_duration_equal_groups(
     daily_users: float,
     eligible_rate: float = 1.0,
 ) -> DurationEstimate:
-    """Estimate duration when all groups have the same required sample size."""
+    """Estimate duration when all groups have equal required sample sizes.
+
+    Args:
+        per_group_sample_size: Required sample size for each group.
+        groups: Number of experiment groups.
+        daily_users: Daily incoming user volume.
+        eligible_rate: Fraction of users eligible for the experiment.
+
+    Returns:
+        A duration estimate for the whole experiment.
+
+    Raises:
+        ValueError: If `per_group_sample_size` or `groups` is invalid.
+    """
     if per_group_sample_size <= 0:
         raise ValueError("per_group_sample_size must be positive.")
     if groups < 2:
@@ -73,10 +111,20 @@ def estimate_duration_by_group(
     traffic_shares: Mapping[str, float],
     eligible_rate: float = 1.0,
 ) -> GroupDurationEstimate:
-    """Estimate duration for unequal sample-size and traffic-share allocations.
+    """Estimate duration for group-specific sample sizes and traffic splits.
 
-    ``group_sample_sizes`` and ``traffic_shares`` must have the same non-empty keys.
-    Share values must be positive and sum to 1.
+    Args:
+        group_sample_sizes: Mapping of group name to required sample size.
+        daily_users: Daily incoming user volume.
+        traffic_shares: Mapping of group name to traffic share. Shares must sum to 1.
+        eligible_rate: Fraction of users eligible for the experiment.
+
+    Returns:
+        Group-level duration estimate with per-group days and overall max days.
+
+    Raises:
+        ValueError: If mappings are empty, keys do not match, shares are invalid,
+            or input values are outside valid ranges.
     """
 
     if not group_sample_sizes:
@@ -114,7 +162,17 @@ def estimate_duration_days_equal_groups(
     daily_eligible_users: float,
     eligibility_fraction: float = 1.0,
 ) -> int:
-    """Backward-compatible alias for the original advanced helper."""
+    """Backward-compatible wrapper for equal-group duration estimation.
+
+    Args:
+        per_group_n: Required sample size for each group.
+        n_groups: Number of experiment groups.
+        daily_eligible_users: Daily incoming user volume.
+        eligibility_fraction: Fraction of users eligible for the experiment.
+
+    Returns:
+        Estimated number of days required.
+    """
     return estimate_duration_equal_groups(
         per_group_sample_size=per_group_n,
         groups=n_groups,
@@ -129,7 +187,19 @@ def estimate_duration_days_custom_split(
     traffic_shares: Mapping[str, float],
     eligibility_fraction: float = 1.0,
 ) -> Dict[str, object]:
-    """Backward-compatible alias for the original custom-split helper."""
+    """Backward-compatible wrapper for custom-split duration estimation.
+
+    Args:
+        group_ns: Mapping of group name to required sample size.
+        daily_eligible_users: Daily incoming user volume.
+        traffic_shares: Mapping of group name to traffic share. Shares must sum to 1.
+        eligibility_fraction: Fraction of users eligible for the experiment.
+
+    Returns:
+        Dictionary with:
+        - `days_per_group`: Group-specific required days.
+        - `max_days`: Maximum days required across groups.
+    """
     result = estimate_duration_by_group(
         group_sample_sizes=group_ns,
         daily_users=daily_eligible_users,

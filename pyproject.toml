@@ -24,11 +24,36 @@ packages = [
 power-calculator = "power_calculator.cli:main"
 
 [tool.poetry.dependencies]
-python = ">=3.8"
+python = ">=3.10,<3.13"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
+black = "^24.8.0"
+ruff = "^0.6.9"
+mypy = "^1.11.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.8"
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
+files = ["power_calculator"]

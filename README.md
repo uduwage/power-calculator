@@ -128,7 +128,7 @@ python -m power_calculator.cli --baseline-rate 10 --mde 2
 - `--mde`: minimum detectable effect in percentage points (required)
 - `--allocation`: `control:treatment` ratio (default: `50:50`)
 - `--daily-users`: average daily experiment users for duration estimate (optional)
-- `--eligible-rate`: eligible share of daily users, accepts `90` or `0.9` (default: `100`)
+- `--eligible-rate`: eligible share of daily users, accepts `90` or `0.9` (default: `1.0`)
 
 ### What `--correction` means
 

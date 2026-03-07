@@ -199,8 +199,8 @@ def estimate_duration_days_custom_split(
 
     Returns:
         Dictionary with:
-        - `days_per_group`: Group-specific required days.
-        - `max_days`: Maximum days required across groups.
+            - `days_per_group`: Group-specific required days.
+            - `max_days`: Maximum days required across groups.
     """
     result = estimate_duration_by_group(
         group_sample_sizes=group_ns,

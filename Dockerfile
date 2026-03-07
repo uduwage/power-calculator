@@ -12,5 +12,11 @@ COPY power_calculator ./power_calculator
 
 RUN pip install --upgrade pip && pip install .
 
+# Drop root privileges for runtime execution.
+RUN groupadd --system app && useradd --system --create-home --gid app app \
+    && chown -R app:app /app
+
+USER app
+
 ENTRYPOINT ["power-calculator"]
 CMD ["--help"]

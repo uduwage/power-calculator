@@ -133,6 +133,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         confidence = _to_probability(args.confidence, "--confidence")
         power = _to_probability(args.power, "--power")
+        eligible_rate = _to_probability(args.eligible_Rate, "--eligible-rate", allow_one=True)
         config = SampleSizeInput(
             alternative=args.alternative,
             confidence_level=confidence,
@@ -171,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
                 traffic_shares=traffic_shares,
                 eligible_rate=eligible_rate,
             )
-        elif args.eligible_rate != 100.0:
+        elif args.eligible_rate != 1.0:
             raise ValueError("--eligible-rate requires --daily-users.")
     except ValueError as exc:
         print(f"{parser.prog}: error: {exc}", file=sys.stderr)

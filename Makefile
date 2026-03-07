@@ -35,7 +35,7 @@ lints.dockerfile:
 		hadolint "$(DOCKERFILE)"; \
 	fi
 
-lints: lints.ruff lints.mypy lints.dockerfile
+lints: lints.format_check lints.ruff lints.mypy lints.dockerfile
 
 lints.ci: lints.format_check lints.ruff lints.mypy
 

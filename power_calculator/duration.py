@@ -167,7 +167,8 @@ def estimate_duration_days_equal_groups(
     Args:
         per_group_n: Required sample size for each group.
         n_groups: Number of experiment groups.
-        daily_eligible_users: Daily incoming user volume.
+        daily_eligible_users: Legacy parameter name. Pass pre-eligibility daily
+            user volume here; `eligibility_fraction` is still applied internally.
         eligibility_fraction: Fraction of users eligible for the experiment.
 
     Returns:
@@ -191,7 +192,8 @@ def estimate_duration_days_custom_split(
 
     Args:
         group_ns: Mapping of group name to required sample size.
-        daily_eligible_users: Daily incoming user volume.
+        daily_eligible_users: Legacy parameter name. Pass pre-eligibility daily
+            user volume here; `eligibility_fraction` is still applied internally.
         traffic_shares: Mapping of group name to traffic share. Shares must sum to 1.
         eligibility_fraction: Fraction of users eligible for the experiment.
 

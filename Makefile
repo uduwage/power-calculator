@@ -27,10 +27,12 @@ lints.mypy:
 	poetry run mypy $(SOURCE_OBJECTS)
 
 lints.dockerfile:
-	@if [ -f "$(DOCKERFILE)" ]; then \
-		hadolint "$(DOCKERFILE)"; \
-	else \
+	@if [ ! -f "$(DOCKERFILE)" ]; then \
 		echo "Skipping hadolint: $(DOCKERFILE) not found"; \
+	elif ! command -v hadolint >/dev/null 2>&1; then \
+		echo "Skipping hadolint: hadolint is not installed"; \
+	else \
+		hadolint "$(DOCKERFILE)"; \
 	fi
 
 lints: lints.ruff lints.mypy lints.dockerfile

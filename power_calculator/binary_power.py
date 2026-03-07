@@ -1,4 +1,9 @@
-"""Binary-metric A/B(/n) sample size calculations."""
+"""Binary-metric A/B(/n) sample size calculations.
+
+Notes:
+    Uses `@dataclass` models as a clear data contract between the CLI layer
+    and core calculation logic.
+"""
 
 from __future__ import annotations
 
@@ -13,11 +18,12 @@ Correction = str
 
 @dataclass(frozen=True)
 class SampleSizeInput:
-    """Configuration for binary sample size calculation.
+    """Input configuration for binary sample-size calculations.
 
     Notes:
-    - ``baseline_rate_pct`` and ``mde_pct`` are percentage points.
-    - ``allocation`` is "control:treatment", for example "50:50" or "40:60".
+        - Groups all calculator inputs in one typed object.
+        - `baseline_rate_pct` and `mde_pct` are percentage points.
+        - `allocation` is `control:treatment`, for example `50:50` or `40:60`.
     """
 
     alternative: Alternative = "two-sided"
@@ -32,7 +38,12 @@ class SampleSizeInput:
 
 @dataclass(frozen=True)
 class SampleSizeResult:
-    """Output from the sample size calculation."""
+    """Output from the sample size calculation.
+
+    Notes:
+        Returns named fields (for example, `control_sample_size` and
+        `overall_total`) instead of positional values.
+    """
 
     alpha: float
     adjusted_alpha: float
@@ -65,7 +76,9 @@ def _parse_allocation(allocation: str) -> Tuple[float, float]:
         control = float(control_text.strip())
         treatment = float(treatment_text.strip())
     except (ValueError, AttributeError) as exc:
-        raise ValueError("Allocation must be in 'control:treatment' format (e.g. 50:50).") from exc
+        raise ValueError(
+            "Allocation must be in 'control:treatment' format (e.g. 50:50)."
+        ) from exc
 
     if control <= 0 or treatment <= 0:
         raise ValueError("Allocation values must both be positive.")
@@ -74,7 +87,9 @@ def _parse_allocation(allocation: str) -> Tuple[float, float]:
     return control / total, treatment / total
 
 
-def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[float, int]:
+def _adjusted_alpha(
+    alpha: float, groups: int, correction: Correction
+) -> tuple[float, int]:
     """Apply multiple-testing correction to alpha.
 
     Args:
@@ -183,9 +198,8 @@ def _normal_ppf(probability: float) -> float:
 
     if probability < lower_region:
         q = sqrt(-2 * log(probability))
-        return (
-            (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
-            / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
+            (((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1
         )
 
     if probability > upper_region:
@@ -249,7 +263,9 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
         )
 
     alpha = 1 - config.confidence_level
-    adjusted_alpha, comparisons = _adjusted_alpha(alpha, config.groups, config.correction)
+    adjusted_alpha, comparisons = _adjusted_alpha(
+        alpha, config.groups, config.correction
+    )
     if not (0 < adjusted_alpha < 1):
         raise ValueError("Adjusted alpha is invalid. Check groups/correction values.")
 
@@ -258,7 +274,9 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
 
     pooled = (baseline + variant) / 2
     null_term = z_alpha * sqrt((1 + ratio) * pooled * (1 - pooled))
-    alt_term = z_beta * sqrt(ratio * baseline * (1 - baseline) + variant * (1 - variant))
+    alt_term = z_beta * sqrt(
+        ratio * baseline * (1 - baseline) + variant * (1 - variant)
+    )
 
     n_control = ceil(((null_term + alt_term) ** 2) / (ratio * (mde**2)))
     n_treatment = ceil(n_control * ratio)

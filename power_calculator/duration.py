@@ -1,4 +1,8 @@
-"""Helpers for estimating experiment duration."""
+"""Helpers for estimating experiment duration.
+
+Notes:
+    Provides total, equal-group, and group-specific duration estimators.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,11 @@ from typing import Dict, Mapping
 
 @dataclass(frozen=True)
 class DurationEstimate:
-    """Duration estimate for a total required sample size."""
+    """Duration estimate for a total required sample size.
+
+    Notes:
+        Includes the effective daily eligible user count used in the estimate.
+    """
 
     total_sample_size: int
     expected_daily_eligible_users: float
@@ -18,7 +26,11 @@ class DurationEstimate:
 
 @dataclass(frozen=True)
 class GroupDurationEstimate:
-    """Duration estimate when sample sizes and traffic splits are group-specific."""
+    """Duration estimate for group-specific sample sizes and traffic splits.
+
+    Notes:
+        `days_required` is the maximum value across `days_per_group`.
+    """
 
     expected_daily_eligible_users: float
     days_per_group: Dict[str, int]
@@ -147,7 +159,9 @@ def estimate_duration_by_group(
     daily_eligible = _validate_daily_inputs(daily_users, eligible_rate)
     days_per_group: Dict[str, int] = {}
     for group, sample_size in group_sample_sizes.items():
-        days_per_group[group] = ceil(sample_size / (daily_eligible * traffic_shares[group]))
+        days_per_group[group] = ceil(
+            sample_size / (daily_eligible * traffic_shares[group])
+        )
 
     return GroupDurationEstimate(
         expected_daily_eligible_users=daily_eligible,

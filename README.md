@@ -33,17 +33,17 @@ It helps you answer:
 
 ```text
 power-calculator/
-├── power_calculator/
-│   ├── __init__.py         # Public package exports
-│   ├── binary_power.py     # Binary metric sample-size calculations
-│   ├── duration.py         # Duration estimators (total/equal-group/by-group)
-│   └── cli.py              # CLI entrypoint and argument parsing
-├── pyproject.toml          # Poetry config, dependencies, tool settings
-├── Makefile                # Format/lint/docker helper commands
-├── Dockerfile              # Container image definition
-├── .dockerignore           # Docker build context exclusions
-├── README.md               # Usage and setup documentation
-└── LICENSE                 # Project license
+|-- power_calculator/
+|   |-- __init__.py         # Public package exports
+|   |-- binary_power.py     # Binary metric sample-size calculations
+|   |-- duration.py         # Duration estimators (total/equal-group/by-group)
+|   |-- cli.py              # CLI entrypoint and argument parsing
+|-- pyproject.toml          # Poetry config, dependencies, tool settings
+|-- Makefile                # Format/lint/docker helper commands
+|-- Dockerfile              # Container image definition
+|-- .dockerignore           # Docker build context exclusions
+|-- README.md               # Usage and setup documentation
+|-- LICENSE                 # Project license
 ```
 
 ## Setup
@@ -296,6 +296,35 @@ Build container with Make:
 ```bash
 make docker.build
 make docker.run
+```
+
+## Solving asdf or poetry issues
+
+```bash
+cd .../power-calculator
+
+# 1) Install poetry version from .tool-versions
+asdf install poetry 2.2.1
+asdf reshim
+
+# 2) Confirm poetry resolves from asdf
+which poetry
+poetry --version
+
+# 3) Recreate project venv with current python 3.12.9
+poetry env remove --all
+poetry env use "$(asdf where python 3.12.9)/bin/python"
+
+# 4) Install dependencies incl dev tools (ruff/black/mypy)
+poetry install --with dev
+
+# 5) Verify tools
+poetry run ruff --version
+poetry run black --version
+poetry run mypy --version
+
+# 6) Run format
+make format
 ```
 
 ## License

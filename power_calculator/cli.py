@@ -1,4 +1,9 @@
-"""CLI for the power-calculator package."""
+"""CLI entrypoint for the power-calculator package.
+
+Notes:
+    Parses command-line arguments, validates inputs, runs sample-size
+    calculations, and optionally prints duration estimates.
+"""
 
 from __future__ import annotations
 
@@ -29,13 +34,11 @@ def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> fl
     if allow_one:
         if not (0 < value <= 1):
             raise ValueError(
-                f"{flag_name} must be in (0, 1] "
-                "(or percent form, allowing 100)."
+                f"{flag_name} must be in (0, 1] " "(or percent form, allowing 100)."
             )
     elif not (0 < value < 1):
         raise ValueError(
-            f"{flag_name} must be in (0, 1) "
-            "(or percent form, excluding 0 and 100)."
+            f"{flag_name} must be in (0, 1) " "(or percent form, excluding 0 and 100)."
         )
     return value
 
@@ -145,7 +148,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.daily_users is not None:
             if args.daily_users <= 0:
                 raise ValueError("--daily-users must be positive.")
-            eligible_rate = _to_probability(args.eligible_rate, "--eligible-rate", allow_one=True)
+            eligible_rate = _to_probability(
+                args.eligible_rate, "--eligible-rate", allow_one=True
+            )
             group_sample_sizes = {"control": result.control_sample_size}
             for idx in range(1, args.groups):
                 group_sample_sizes[f"treatment_{idx}"] = result.treatment_sample_size
@@ -197,11 +202,14 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print("Duration Estimate")
         print(f"Daily users: {args.daily_users:,.2f}")
-        print(f"Eligible rate: {duration.expected_daily_eligible_users / args.daily_users:.2%}")
-        print(f"Expected daily eligible users: {duration.expected_daily_eligible_users:,.2f}")
+        eligible_pct = duration.expected_daily_eligible_users / args.daily_users
+        print(f"Eligible rate: {eligible_pct:.2%}")
+        expected_daily = duration.expected_daily_eligible_users
+        print(f"Expected daily eligible users: {expected_daily:,.2f}")
         print(f"Estimated duration: {duration.days_required} day(s)")
         bottleneck_group = max(duration.days_per_group, key=duration.days_per_group.get)
-        print(f"Bottleneck group: {bottleneck_group} ({duration.days_per_group[bottleneck_group]} days)")
+        bottleneck_days = duration.days_per_group[bottleneck_group]
+        print(f"Bottleneck group: {bottleneck_group} ({bottleneck_days} days)")
     return 0
 
 

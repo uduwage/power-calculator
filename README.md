@@ -87,6 +87,12 @@ Build image:
 docker build -t power-calculator:latest .
 ```
 
+Build image with explicit Python version:
+
+```bash
+docker build --build-arg PYTHON_VERSION=3.12-slim -t power-calculator:latest .
+```
+
 Run help:
 
 ```bash

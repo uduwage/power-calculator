@@ -15,23 +15,28 @@ def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> fl
     Args:
         value: Input value, either in 0-1 scale or 0-100 percent.
         flag_name: Flag name for validation error messages.
-        allow_one: If true, accepts `1.0`/`100` as valid upper bound.
+        allow_one: If true, accepts `1.0`/`100` as valid upper bound and
+            validates against `(0, 1]`; otherwise validates against `(0, 1)`.
 
     Returns:
         Normalized probability value in 0-1 scale.
 
     Raises:
-        ValueError: If value falls outside the allowed range.
+        ValueError: If value falls outside the allowed open/closed interval.
     """
     if value > 1:
         value = value / 100.0
     if allow_one:
         if not (0 < value <= 1):
             raise ValueError(
-                f"{flag_name} must be > 0 and <= 1 (or 0 and 100 as percentage, allowing 100)."
+                f"{flag_name} must be in (0, 1] "
+                "(or percent form, allowing 100)."
             )
     elif not (0 < value < 1):
-        raise ValueError(f"{flag_name} must be between 0 and 1 (or 0 and 100 as percentage).")
+        raise ValueError(
+            f"{flag_name} must be in (0, 1) "
+            "(or percent form, excluding 0 and 100)."
+        )
     return value
 
 

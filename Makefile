@@ -13,7 +13,7 @@ format.black:
 	poetry run black $(SOURCE_OBJECTS)
 
 format.ruff:
-	poetry run ruff check --silent --fix --exit-zero $(SOURCE_OBJECTS)
+	poetry run ruff check --silent --fix $(SOURCE_OBJECTS)
 
 format: format.ruff format.black
 

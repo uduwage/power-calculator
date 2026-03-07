@@ -50,7 +50,7 @@ power-calculator/
 
 ### Prerequisites
 
-- Python `>= 3.8`
+- Python `>=3.10,<3.13`
 - `pip` or `poetry`
 
 ### Option 1: Poetry (recommended)

@@ -124,6 +124,17 @@ python -m power_calculator.cli --baseline-rate 10 --mde 2
 - `--daily-users`: average daily experiment users for duration estimate (optional)
 - `--eligible-rate`: eligible share of daily users, accepts `90` or `0.9` (default: `100`)
 
+### What `--correction` means
+
+When `groups > 2`, you usually compare one control against multiple treatments (`groups - 1` comparisons).  
+`--correction` adjusts alpha to control false positives across those multiple comparisons:
+
+- `none`: no adjustment
+- `bonferroni`: `adjusted_alpha = alpha / comparisons`
+- `sidak`: `adjusted_alpha = 1 - (1 - alpha)^(1 / comparisons)`
+
+For `groups = 2`, correction has no practical effect because there is only one comparison.
+
 ### Example: Two-sided A/B
 
 ```bash
@@ -165,6 +176,22 @@ This prints a `Duration Estimate` section with:
 - expected daily eligible users
 - estimated duration in days
 - bottleneck group (for multi-group/custom allocation cases)
+
+### Example: Set every input parameter (all non-default values)
+
+```bash
+python -m power_calculator.cli \
+  --alternative one-sided \
+  --confidence 92 \
+  --power 85 \
+  --groups 5 \
+  --correction sidak \
+  --baseline-rate 12.5 \
+  --mde 1.8 \
+  --allocation 45:55 \
+  --daily-users 7500 \
+  --eligible-rate 92
+```
 
 ## Python API Usage
 
@@ -234,6 +261,15 @@ Common input checks include:
 - `groups >= 2`
 - allocation values must be positive and in `control:treatment` format
 - duration inputs require positive `daily_users`, and `eligible_rate` in `(0, 1]`
+
+## References
+
+- Casagrande, J. T., Pike, M. C., & Smith, P. G. (1978). *An improved approximate formula for calculating sample sizes for comparing two binomial distributions*. Biometrics, 34(3), 483-486. DOI: https://doi.org/10.2307/2530613
+- Fleiss, J. L., Tytun, A., & Ury, H. K. (1980). *A simple approximation for calculating sample sizes for comparing independent proportions*. Biometrics, 36(2), 343-346. DOI: https://doi.org/10.2307/2529990
+- Sidak, Z. (1967). *Rectangular confidence regions for the means of multivariate normal distributions*. Journal of the American Statistical Association, 62(318), 626-633. DOI: https://doi.org/10.1080/01621459.1967.10482935
+- Dunn, O. J. (1961). *Multiple comparisons among means*. Journal of the American Statistical Association, 56(293), 52-64. DOI: https://doi.org/10.2307/2282330
+- Kohavi, R., Tang, D., & Xu, Y. (2020). *Trustworthy Online Controlled Experiments: A Practical Guide to A/B Testing*. Cambridge University Press. DOI: https://doi.org/10.1017/9781108653985
+- Acklam, P. J. (2000). *An algorithm for computing the inverse normal cumulative distribution function* (reference implementation note used for the normal quantile approximation). Archived source: http://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/
 
 ## Development
 

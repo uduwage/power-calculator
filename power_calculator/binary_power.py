@@ -87,6 +87,13 @@ def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[
 
     Raises:
         ValueError: If correction method is unsupported.
+
+    References:
+        - Sidak, Z. (1967). Rectangular confidence regions for the means of
+          multivariate normal distributions.
+          https://doi.org/10.1080/01621459.1967.10482935
+        - Dunn, O. J. (1961). Multiple comparisons among means.
+          https://doi.org/10.2307/2282330
     """
     comparisons = max(groups - 1, 1)
     if correction == "none" or comparisons == 1:
@@ -131,6 +138,10 @@ def _normal_ppf(probability: float) -> float:
 
     Raises:
         ValueError: If probability is outside `(0, 1)`.
+
+    References:
+        - Acklam, P. J. (2000). Inverse normal CDF approximation note.
+          http://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/
     """
 
     if not (0 < probability < 1):
@@ -206,6 +217,12 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
 
     Raises:
         ValueError: If configuration values are outside valid ranges.
+
+    References:
+        - Casagrande, J. T., Pike, M. C., & Smith, P. G. (1978).
+          https://doi.org/10.2307/2530613
+        - Fleiss, J. L., Tytun, A., & Ury, H. K. (1980).
+          https://doi.org/10.2307/2529990
     """
 
     if not (0 < config.confidence_level < 1):

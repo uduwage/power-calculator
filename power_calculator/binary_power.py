@@ -1,4 +1,9 @@
-"""Binary-metric A/B(/n) sample size calculations."""
+"""Binary-metric A/B(/n) sample size calculations.
+
+Notes:
+    Uses `@dataclass` models as a clear data contract between the CLI layer
+    and core calculation logic.
+"""
 
 from __future__ import annotations
 
@@ -13,11 +18,12 @@ Correction = str
 
 @dataclass(frozen=True)
 class SampleSizeInput:
-    """Configuration for binary sample size calculation.
+    """Input configuration for binary sample-size calculations.
 
     Notes:
-    - ``baseline_rate_pct`` and ``mde_pct`` are percentage points.
-    - ``allocation`` is "control:treatment", for example "50:50" or "40:60".
+        - Groups all calculator inputs in one typed object.
+        - `baseline_rate_pct` and `mde_pct` are percentage points.
+        - `allocation` is `control:treatment`, for example `50:50` or `40:60`.
     """
 
     alternative: Alternative = "two-sided"
@@ -32,7 +38,12 @@ class SampleSizeInput:
 
 @dataclass(frozen=True)
 class SampleSizeResult:
-    """Output from the sample size calculation."""
+    """Output from the sample size calculation.
+
+    Notes:
+        Returns named fields (for example, `control_sample_size` and
+        `overall_total`) instead of positional values.
+    """
 
     alpha: float
     adjusted_alpha: float
@@ -49,12 +60,25 @@ class SampleSizeResult:
 
 
 def _parse_allocation(allocation: str) -> Tuple[float, float]:
+    """Parse a control:treatment allocation string.
+
+    Args:
+        allocation: Allocation text in `control:treatment` format.
+
+    Returns:
+        Normalized control and treatment shares that sum to 1.
+
+    Raises:
+        ValueError: If format is invalid or values are non-positive.
+    """
     try:
         control_text, treatment_text = allocation.split(":")
         control = float(control_text.strip())
         treatment = float(treatment_text.strip())
     except (ValueError, AttributeError) as exc:
-        raise ValueError("Allocation must be in 'control:treatment' format (e.g. 50:50).") from exc
+        raise ValueError(
+            "Allocation must be in 'control:treatment' format (e.g. 50:50)."
+        ) from exc
 
     if control <= 0 or treatment <= 0:
         raise ValueError("Allocation values must both be positive.")
@@ -63,7 +87,29 @@ def _parse_allocation(allocation: str) -> Tuple[float, float]:
     return control / total, treatment / total
 
 
-def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[float, int]:
+def _adjusted_alpha(
+    alpha: float, groups: int, correction: Correction
+) -> tuple[float, int]:
+    """Apply multiple-testing correction to alpha.
+
+    Args:
+        alpha: Raw type I error rate.
+        groups: Total number of groups in the experiment.
+        correction: Correction method (`none`, `bonferroni`, `sidak`).
+
+    Returns:
+        Tuple of `(adjusted_alpha, comparisons)` where comparisons is `groups - 1`.
+
+    Raises:
+        ValueError: If correction method is unsupported.
+
+    References:
+        - Sidak, Z. (1967). Rectangular confidence regions for the means of
+          multivariate normal distributions.
+          https://doi.org/10.1080/01621459.1967.10482935
+        - Dunn, O. J. (1961). Multiple comparisons among means.
+          https://doi.org/10.2307/2282330
+    """
     comparisons = max(groups - 1, 1)
     if correction == "none" or comparisons == 1:
         return alpha, comparisons
@@ -75,6 +121,18 @@ def _adjusted_alpha(alpha: float, groups: int, correction: Correction) -> tuple[
 
 
 def _critical_z(alpha: float, alternative: Alternative) -> float:
+    """Return critical z-value for the configured alternative hypothesis.
+
+    Args:
+        alpha: Type I error rate after correction.
+        alternative: `one-sided` or `two-sided`.
+
+    Returns:
+        Critical z-value.
+
+    Raises:
+        ValueError: If alternative is unsupported.
+    """
     if alternative == "two-sided":
         return _normal_ppf(1 - alpha / 2)
     if alternative == "one-sided":
@@ -86,6 +144,19 @@ def _normal_ppf(probability: float) -> float:
     """Inverse CDF for standard normal distribution.
 
     Rational approximation from Peter John Acklam's algorithm.
+
+    Args:
+        probability: Probability in the open interval `(0, 1)`.
+
+    Returns:
+        Standard normal quantile `z` such that `P(Z <= z) = probability`.
+
+    Raises:
+        ValueError: If probability is outside `(0, 1)`.
+
+    References:
+        - Acklam, P. J. (2000). Inverse normal CDF approximation note.
+          http://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/
     """
 
     if not (0 < probability < 1):
@@ -127,9 +198,8 @@ def _normal_ppf(probability: float) -> float:
 
     if probability < lower_region:
         q = sqrt(-2 * log(probability))
-        return (
-            (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
-            / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
+            (((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1
         )
 
     if probability > upper_region:
@@ -152,6 +222,21 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     Uses the normal approximation for difference in two proportions.
     For ``groups > 2`` this assumes one control group and ``groups - 1``
     treatment groups compared pairwise to control.
+
+    Args:
+        config: Sample-size configuration for binary A/B(/n) calculation.
+
+    Returns:
+        Sample-size result including per-group and overall totals.
+
+    Raises:
+        ValueError: If configuration values are outside valid ranges.
+
+    References:
+        - Casagrande, J. T., Pike, M. C., & Smith, P. G. (1978).
+          https://doi.org/10.2307/2530613
+        - Fleiss, J. L., Tytun, A., & Ury, H. K. (1980).
+          https://doi.org/10.2307/2529990
     """
 
     if not (0 < config.confidence_level < 1):
@@ -178,7 +263,9 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
         )
 
     alpha = 1 - config.confidence_level
-    adjusted_alpha, comparisons = _adjusted_alpha(alpha, config.groups, config.correction)
+    adjusted_alpha, comparisons = _adjusted_alpha(
+        alpha, config.groups, config.correction
+    )
     if not (0 < adjusted_alpha < 1):
         raise ValueError("Adjusted alpha is invalid. Check groups/correction values.")
 
@@ -187,7 +274,9 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
 
     pooled = (baseline + variant) / 2
     null_term = z_alpha * sqrt((1 + ratio) * pooled * (1 - pooled))
-    alt_term = z_beta * sqrt(ratio * baseline * (1 - baseline) + variant * (1 - variant))
+    alt_term = z_beta * sqrt(
+        ratio * baseline * (1 - baseline) + variant * (1 - variant)
+    )
 
     n_control = ceil(((null_term + alt_term) ** 2) / (ratio * (mde**2)))
     n_treatment = ceil(n_control * ratio)

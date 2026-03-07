@@ -1,4 +1,9 @@
-"""CLI for the power-calculator package."""
+"""CLI entrypoint for the power-calculator package.
+
+Notes:
+    Parses command-line arguments, validates inputs, runs sample-size
+    calculations, and optionally prints duration estimates.
+"""
 
 from __future__ import annotations
 
@@ -10,20 +15,40 @@ from power_calculator.duration import estimate_duration_by_group
 
 
 def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> float:
-    """Accept either 0-1 or 0-100 input and return 0-1 probability."""
+    """Normalize probability-like CLI input to 0-1 scale.
+
+    Args:
+        value: Input value, either in 0-1 scale or 0-100 percent.
+        flag_name: Flag name for validation error messages.
+        allow_one: If true, accepts `1.0`/`100` as valid upper bound and
+            validates against `(0, 1]`; otherwise validates against `(0, 1)`.
+
+    Returns:
+        Normalized probability value in 0-1 scale.
+
+    Raises:
+        ValueError: If value falls outside the allowed open/closed interval.
+    """
     if value > 1:
         value = value / 100.0
     if allow_one:
         if not (0 < value <= 1):
             raise ValueError(
-                f"{flag_name} must be > 0 and <= 1 (or 0 and 100 as percentage, allowing 100)."
+                f"{flag_name} must be in (0, 1] " "(or percent form, allowing 100)."
             )
     elif not (0 < value < 1):
-        raise ValueError(f"{flag_name} must be between 0 and 1 (or 0 and 100 as percentage).")
+        raise ValueError(
+            f"{flag_name} must be in (0, 1) " "(or percent form, excluding 0 and 100)."
+        )
     return value
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build CLI argument parser.
+
+    Returns:
+        Configured argument parser for the power calculator CLI.
+    """
     parser = argparse.ArgumentParser(
         prog="power-calculator",
         description="Binary metric sample size calculator for A/B(/n) tests.",
@@ -84,22 +109,34 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--eligible-rate",
         type=float,
-        default=100.0,
+        default=1.0,
         help=(
             "Share of daily users eligible for the test. "
-            "Accepts 100 or 1.0 for 100%%."
+            "Accepts 0-1 or 0-100 input. "
+            "Default: 1.0 (100%%)."
         ),
     )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the CLI entrypoint.
+
+    Args:
+        argv: Optional explicit CLI args. Uses `sys.argv` when omitted.
+
+    Returns:
+        Exit code (`0` for success, `2` for validation failures).
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
 
     try:
         confidence = _to_probability(args.confidence, "--confidence")
         power = _to_probability(args.power, "--power")
+        eligible_rate = _to_probability(
+            args.eligible_rate, "--eligible-rate", allow_one=True
+        )
         config = SampleSizeInput(
             alternative=args.alternative,
             confidence_level=confidence,
@@ -115,7 +152,6 @@ def main(argv: list[str] | None = None) -> int:
         if args.daily_users is not None:
             if args.daily_users <= 0:
                 raise ValueError("--daily-users must be positive.")
-            eligible_rate = _to_probability(args.eligible_rate, "--eligible-rate", allow_one=True)
             group_sample_sizes = {"control": result.control_sample_size}
             for idx in range(1, args.groups):
                 group_sample_sizes[f"treatment_{idx}"] = result.treatment_sample_size
@@ -136,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
                 traffic_shares=traffic_shares,
                 eligible_rate=eligible_rate,
             )
-        elif args.eligible_rate != 100.0:
+        elif eligible_rate != 1.0:
             raise ValueError("--eligible-rate requires --daily-users.")
     except ValueError as exc:
         print(f"{parser.prog}: error: {exc}", file=sys.stderr)
@@ -167,11 +203,16 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print("Duration Estimate")
         print(f"Daily users: {args.daily_users:,.2f}")
-        print(f"Eligible rate: {duration.expected_daily_eligible_users / args.daily_users:.2%}")
-        print(f"Expected daily eligible users: {duration.expected_daily_eligible_users:,.2f}")
+        eligible_pct = duration.expected_daily_eligible_users / args.daily_users
+        print(f"Eligible rate: {eligible_pct:.2%}")
+        expected_daily = duration.expected_daily_eligible_users
+        print(f"Expected daily eligible users: {expected_daily:,.2f}")
         print(f"Estimated duration: {duration.days_required} day(s)")
-        bottleneck_group = max(duration.days_per_group, key=duration.days_per_group.get)
-        print(f"Bottleneck group: {bottleneck_group} ({duration.days_per_group[bottleneck_group]} days)")
+        bottleneck_group = max(
+            duration.days_per_group, key=lambda group: duration.days_per_group[group]
+        )  # fixing annoying mypy typing error
+        bottleneck_days = duration.days_per_group[bottleneck_group]
+        print(f"Bottleneck group: {bottleneck_group} ({bottleneck_days} days)")
     return 0
 
 

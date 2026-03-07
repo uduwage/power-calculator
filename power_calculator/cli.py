@@ -109,10 +109,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--eligible-rate",
         type=float,
-        default=100.0,
+        default=1.0,
         help=(
             "Share of daily users eligible for the test. "
-            "Accepts 100 or 1.0 for 100%%."
+            "Accepts 0-1 or 0-100 input. "
+            "Default: 1.0 (100%%)."
         ),
     )
     return parser
@@ -133,7 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         confidence = _to_probability(args.confidence, "--confidence")
         power = _to_probability(args.power, "--power")
-        eligible_rate = _to_probability(args.eligible_Rate, "--eligible-rate", allow_one=True)
+        eligible_rate = _to_probability(
+            args.eligible_rate, "--eligible-rate", allow_one=True
+        )
         config = SampleSizeInput(
             alternative=args.alternative,
             confidence_level=confidence,
@@ -149,9 +152,6 @@ def main(argv: list[str] | None = None) -> int:
         if args.daily_users is not None:
             if args.daily_users <= 0:
                 raise ValueError("--daily-users must be positive.")
-            eligible_rate = _to_probability(
-                args.eligible_rate, "--eligible-rate", allow_one=True
-            )
             group_sample_sizes = {"control": result.control_sample_size}
             for idx in range(1, args.groups):
                 group_sample_sizes[f"treatment_{idx}"] = result.treatment_sample_size
@@ -172,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
                 traffic_shares=traffic_shares,
                 eligible_rate=eligible_rate,
             )
-        elif args.eligible_rate != 1.0:
+        elif eligible_rate != 1.0:
             raise ValueError("--eligible-rate requires --daily-users.")
     except ValueError as exc:
         print(f"{parser.prog}: error: {exc}", file=sys.stderr)
@@ -208,7 +208,9 @@ def main(argv: list[str] | None = None) -> int:
         expected_daily = duration.expected_daily_eligible_users
         print(f"Expected daily eligible users: {expected_daily:,.2f}")
         print(f"Estimated duration: {duration.days_required} day(s)")
-        bottleneck_group = max(duration.days_per_group, key=duration.days_per_group.get)
+        bottleneck_group = max(
+            duration.days_per_group, key=lambda group: duration.days_per_group[group]
+        )  # fixing annoying mypy typing error
         bottleneck_days = duration.days_per_group[bottleneck_group]
         print(f"Bottleneck group: {bottleneck_group} ({bottleneck_days} days)")
     return 0

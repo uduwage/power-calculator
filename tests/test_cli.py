@@ -14,6 +14,7 @@ def test_cli_50_50_current_behavior(capsys) -> None:
             "--baseline-rate",
             "10",
             "--mde",
+            "2",
             "--allocation",
             "50:50",
         ]
@@ -35,7 +36,7 @@ def test_cli_groups_gt_2_40_60_current_behavior(capsys) -> None:
             "95",
             "--power",
             "80",
-            "groups",
+            "--groups",
             "4",
             "--baseline-rate",
             "10",

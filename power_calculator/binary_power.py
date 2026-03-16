@@ -59,21 +59,23 @@ class SampleSizeResult:
 
 
 def _parse_allocation(allocation: str, groups: int) -> list[float]:
-    """Parse allocation into normalized control and treatment shares.
+    """Parse allocation into normalized per-group shares.
 
-    Supporting imput forms:
-    - legacy: control:treatment (i.e: 40:60), expanded across groups-1 treatments.
-    - explicit: control:t1:t2:... (must provide exactly `groups` values).
+    Supported input forms:
+    - groups=2: `control:treatment` (e.g. `50:50`)
+    - groups>2: explicit `control:t1:t2:...` with exactly `groups` values
+      (e.g. `50:25:25` for 3 groups).
 
     Args:
-        allocation (str): Allocation text in `control:treatment` format.
-        groups (int): number of experimental groups including control.
+        allocation: Allocation text separated by `:`.
+        groups: Total number of experiment groups, including control.
 
     Returns:
-        list of normalized treatment shares with length `groups - 1`
+        Normalized per-group shares as `[control, treatment_1, ...]`.
 
     Raises:
-        ValueError: If format is invalid or values are non-positive.
+        ValueError: If parsing fails, count does not match allowed formats,
+            or any value is non-positive.
     """
     try:
         weights = [float(part.strip()) for part in allocation.split(":")]
@@ -84,18 +86,19 @@ def _parse_allocation(allocation: str, groups: int) -> list[float]:
         ) from exc
 
     if len(weights) < 2:
-        raise ValueError("Allocation must include at least control and on treatment.")
+        raise ValueError("Allocation must include at least control and one treatment.")
     if any(weight <= 0 for weight in weights):
-        raise ValueError("Allocation values must all be positive")
+        raise ValueError("Allocation values must all be positive.")
 
-    if len(weights) == 2:
-        expanded = [weights[0]] + [weights[1]] * (groups - 1)
+    if len(weights) == 2 and groups == 2:
+        expanded = weights
     elif len(weights) == groups:
         expanded = weights
     else:
         raise ValueError(
-            f"Allocation has {len(weights)} values but groups={groups}."
-            "use 2 values (control:treatment) or exactly one value per group."
+            f"Allocation has {len(weights)} values but groups={groups}. "
+            "For groups > 2, provide exactly one value per group "
+            "(e.g. 50:25:25)."
         )
     total = sum(expanded)
     return [weight / total for weight in expanded]

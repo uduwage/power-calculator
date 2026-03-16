@@ -98,7 +98,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--allocation",
         default="50:50",
-        help="Control:treatment allocation ratio. Default is 50:50.",
+        help=(
+            "Allocation ratio. For groups=2 use control:treatment (50:50). "
+            "For groups>2 use control:t1:t2:... (e.g. 50:25:25)."
+        ),
     )
     parser.add_argument(
         "--daily-users",

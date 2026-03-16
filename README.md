@@ -18,7 +18,9 @@ It helps you answer:
   - multiple testing correction: `none`, `bonferroni`, `sidak`
   - baseline metric rate (%)
   - MDE (`Y_t - Y_c`) in percentage points
-  - control:treatment allocation ratio (default `50:50`)
+  - allocation ratios:
+    - `groups=2`: `control:treatment` (default `50:50`)
+    - `groups>2`: explicit `control:t1:t2:...` (for example `40:60:60:60`)
 - Optional duration estimate from:
   - daily users
   - eligible rate
@@ -126,7 +128,9 @@ python -m power_calculator.cli --baseline-rate 10 --mde 2
 - `--correction`: `none`, `bonferroni`, `sidak` (default: `none`)
 - `--baseline-rate`: baseline binary rate in percent (required)
 - `--mde`: minimum detectable effect in percentage points (required)
-- `--allocation`: `control:treatment` ratio (default: `50:50`)
+- `--allocation`:
+  - for `--groups 2`: `control:treatment` (default: `50:50`)
+  - for `--groups > 2`: `control:t1:t2:...` with exactly one value per group
 - `--daily-users`: average daily experiment users for duration estimate (optional)
 - `--eligible-rate`: eligible share of daily users, accepts `90` or `0.9` (default: `1.0`)
 
@@ -140,6 +144,16 @@ When `groups > 2`, you usually compare one control against multiple treatments (
 - `sidak`: `adjusted_alpha = 1 - (1 - alpha)^(1 / comparisons)`
 
 For `groups = 2`, correction has no practical effect because there is only one comparison.
+
+### Allocation format notes
+
+- For `groups=2`, use two values like `50:50`.
+- For `groups>2`, pass exactly one value per group, including control.
+  - Example: `--groups 3 --allocation 50:25:25`
+  - Example: `--groups 4 --allocation 40:20:20:20`
+- Current engine behavior: treatment allocations must be equal across treatment
+  arms for sample-size calculation. Non-uniform treatment allocations (for
+  example `33:33:34` for 3 groups) are rejected.
 
 ### Example: Two-sided A/B
 
@@ -165,7 +179,7 @@ python -m power_calculator.cli \
   --correction bonferroni \
   --baseline-rate 10 \
   --mde 2 \
-  --allocation 40:60
+  --allocation 40:60:60:60
 ```
 
 ### Example: Include duration estimate
@@ -194,7 +208,7 @@ python -m power_calculator.cli \
   --correction sidak \
   --baseline-rate 12.5 \
   --mde 1.8 \
-  --allocation 45:55 \
+  --allocation 45:55:55:55:55 \
   --daily-users 7500 \
   --eligible-rate 92
 ```
@@ -265,7 +279,10 @@ Common input checks include:
 - confidence and power must be in `(0, 1)` (or `%` form in CLI)
 - baseline rate and MDE must be valid percentages
 - `groups >= 2`
-- allocation values must be positive and in `control:treatment` format
+- allocation values must be positive
+- for `groups=2`, allocation must have 2 values: `control:treatment`
+- for `groups>2`, allocation must have exactly `groups` values: `control:t1:t2:...`
+- treatment allocations must currently be uniform across treatment arms
 - duration inputs require positive `daily_users`, and `eligible_rate` in `(0, 1]`
 
 ## References

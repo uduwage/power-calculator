@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import log
 from math import ceil, sqrt
-from typing import Tuple
 
 Alternative = str
 Correction = str
@@ -59,32 +58,47 @@ class SampleSizeResult:
     overall_total: int
 
 
-def _parse_allocation(allocation: str) -> Tuple[float, float]:
-    """Parse a control:treatment allocation string.
+def _parse_allocation(allocation: str, groups: int) -> list[float]:
+    """Parse allocation into normalized control and treatment shares.
+
+    Supporting imput forms:
+    - legacy: control:treatment (i.e: 40:60), expanded across groups-1 treatments.
+    - explicit: control:t1:t2:... (must provide exactly `groups` values).
 
     Args:
-        allocation: Allocation text in `control:treatment` format.
+        allocation (str): Allocation text in `control:treatment` format.
+        groups (int): number of experimental groups including control.
 
     Returns:
-        Normalized control and treatment shares that sum to 1.
+        list of normalized treatment shares with length `groups - 1`
 
     Raises:
         ValueError: If format is invalid or values are non-positive.
     """
     try:
-        control_text, treatment_text = allocation.split(":")
-        control = float(control_text.strip())
-        treatment = float(treatment_text.strip())
-    except (ValueError, AttributeError) as exc:
+        weights = [float(part.strip()) for part in allocation.split(":")]
+    except (AttributeError, ValueError) as exc:
         raise ValueError(
-            "Allocation must be in 'control:treatment' format (e.g. 50:50)."
+            "Allocation must be in 'control:treatment' or "
+            "'control:t1:t2:...' format (i.e: 50:50 or 33:33:34)."
         ) from exc
 
-    if control <= 0 or treatment <= 0:
-        raise ValueError("Allocation values must both be positive.")
+    if len(weights) < 2:
+        raise ValueError("Allocation must include at least control and on treatment.")
+    if any(weight <= 0 for weight in weights):
+        raise ValueError("Allocation values must all be positive")
 
-    total = control + treatment
-    return control / total, treatment / total
+    if len(weights) == 2:
+        expanded = [weights[0]] + [weights[1]] * (groups - 1)
+    elif len(weights) == groups:
+        expanded = weights
+    else:
+        raise ValueError(
+            f"Allocation has {len(weights)} values but groups={groups}."
+            "use 2 values (control:treatment) or exactly one value per group."
+        )
+    total = sum(expanded)
+    return [weight / total for weight in expanded]
 
 
 def _adjusted_alpha(
@@ -144,6 +158,7 @@ def _normal_ppf(probability: float) -> float:
     """Inverse CDF for standard normal distribution.
 
     Rational approximation from Peter John Acklam's algorithm.
+    TODO: Research on how to use scikit-learn (distribution setup)
 
     Args:
         probability: Probability in the open interval `(0, 1)`.
@@ -250,7 +265,16 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     if not (0 < config.mde_pct < 100):
         raise ValueError("mde_pct must be between 0 and 100.")
 
-    control_alloc, treatment_alloc = _parse_allocation(config.allocation)
+    allocation_shares = _parse_allocation(config.allocation, config.groups)
+    control_share = allocation_shares[0]
+    treatment_shares = allocation_shares[1:]
+
+    if len({round(share, 12) for share in treatment_shares}) != 1:
+        raise ValueError("Non-uniform treatment allocations are not supported yet.")
+
+    pair_total = control_share + treatment_shares[0]
+    control_alloc = control_share / pair_total
+    treatment_alloc = treatment_shares[0] / pair_total
     ratio = treatment_alloc / control_alloc
 
     baseline = config.baseline_rate_pct / 100.0

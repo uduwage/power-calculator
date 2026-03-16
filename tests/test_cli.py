@@ -1,6 +1,7 @@
 from power_calculator.cli import main
 
-def test_cli_50_50_current_behavior(capsys) -> None: 
+
+def test_cli_50_50_current_behavior(capsys) -> None:
     exit_code = main(
         [
             "--alternative",
@@ -73,6 +74,6 @@ def test_cli_rejects_three_part_allocation_today(capsys) -> None:
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "power-calculator: error: Allocation must be in 'control:treatment' format "
-        "(e.g. 50:50)."
-    ) in captured.err    
+        "power-calculator: error: Allocation has 3 values but groups=2."
+        in captured.err
+    )

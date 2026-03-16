@@ -1,6 +1,10 @@
 import pytest
 
-from power_calculator.binary_power import SampleSizeInput, calculate_sample_size
+from power_calculator.binary_power import (
+    SampleSizeInput,
+    _parse_allocation,
+    calculate_sample_size,
+)
 
 def test_calculate_sample_size_ab_50_50_current_behavior() -> None:
     result = calculate_sample_size(
@@ -34,7 +38,7 @@ def test_calculate_sample_size_groups_gt_2_with_40_60_current_behavior() -> None
             correction="none",
             baseline_rate_pct=10.0,
             mde_pct=2.0,
-            allocation="40:60",            
+            allocation="40:60",
         )
     )
 
@@ -49,7 +53,7 @@ def test_calculate_sample_size_groups_gt_2_with_40_60_current_behavior() -> None
 def test_calculate_sample_size_rejects_three_part_allocation_today() -> None:
     with pytest.raises(
         ValueError,
-        match=r"Allocation must be in 'control:treatment' format \(e\.g\. 50:50\)\.",
+        match=r"Allocation has 3 values but groups=2\.",
     ):
         calculate_sample_size(
             SampleSizeInput(
@@ -59,3 +63,21 @@ def test_calculate_sample_size_rejects_three_part_allocation_today() -> None:
                 allocation="33:33:34",
             )
         )
+
+def test_parse_allocation_explicit_multivariant() -> None:
+    shares = _parse_allocation("33:33:34", groups=3)
+    assert len(shares) == 3
+    assert sum(shares) == pytest.approx(1.0)
+    assert shares[0] == pytest.approx(0.33, rel=1e-3)
+    assert shares[1] == pytest.approx(0.33, rel=1e-3)
+    assert shares[2] == pytest.approx(0.34, rel=1e-3)
+
+
+def test_parse_allocation_legacy_two_part_expands_by_group_count() -> None:
+    shares = _parse_allocation("40:60", groups=4)
+    assert len(shares) == 4
+    assert sum(shares) == pytest.approx(1.0)
+    assert shares[0] == pytest.approx(40 / 220)
+    assert shares[1] == pytest.approx(60 / 220)
+    assert shares[2] == pytest.approx(60 / 220)
+    assert shares[3] == pytest.approx(60 / 220)

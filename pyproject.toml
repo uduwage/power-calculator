@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "power-calculator"
-version = "0.1.0"
+version = "0.1.1"
 description = "Power analysis and sample size calculator for A/B(/n) tests with binary metrics."
 authors = ["uduwage"]
 license = "MIT"

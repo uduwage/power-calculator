@@ -82,7 +82,7 @@ def _parse_allocation(allocation: str, groups: int) -> list[float]:
     except (AttributeError, ValueError) as exc:
         raise ValueError(
             "Allocation must be in 'control:treatment' or "
-            "'control:t1:t2:...' format (i.e: 50:50 or 33:33:34)."
+            "'control:t1:t2:...' format (i.e. 50:50 or 33:33:34)."
         ) from exc
 
     if len(weights) < 2:
@@ -95,10 +95,18 @@ def _parse_allocation(allocation: str, groups: int) -> list[float]:
     elif len(weights) == groups:
         expanded = weights
     else:
+        if groups == 2:
+            guidance = (
+                "For 2 groups, provide exactly two values like "
+                "'control:treatment' (e.g. 50:50)."
+            )
+        else:
+            guidance = (
+                "For groups > 2, provide exactly one value per group "
+                "(e.g. 50:25:25)."
+            )
         raise ValueError(
-            f"Allocation has {len(weights)} values but groups={groups}. "
-            "For groups > 2, provide exactly one value per group "
-            "(e.g. 50:25:25)."
+            f"Allocation has {len(weights)} values but groups={groups}. " + guidance
         )
     total = sum(expanded)
     return [weight / total for weight in expanded]
@@ -161,7 +169,10 @@ def _normal_ppf(probability: float) -> float:
     """Inverse CDF for standard normal distribution.
 
     Rational approximation from Peter John Acklam's algorithm.
-    TODO: Research on how to use scikit-learn (distribution setup)
+    TODO: It looks like SciPy supports this approximation calculation.
+    Once SciPy is added as a dependency in the future, consider delegating
+    to its normal inverse CDF implementation (such as
+    `scipy.stats.norm.ppf`) instead of maintaining this approximation.
 
     Args:
         probability: Probability in the open interval `(0, 1)`.

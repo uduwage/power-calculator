@@ -51,6 +51,21 @@ def test_calculate_sample_size_groups_gt_2_with_explicit_allocation() -> None:
     assert result.overall_total == 17523
 
 
+def test_calculate_sample_size_rejects_non_uniform_treatment_allocations() -> None:
+    with pytest.raises(
+        ValueError,
+        match=r"Non-uniform treatment allocations are not supported yet\.",
+    ):
+        calculate_sample_size(
+            SampleSizeInput(
+                groups=3,
+                baseline_rate_pct=10.0,
+                mde_pct=2.0,
+                allocation="34:40:26",
+            )
+        )
+
+
 def test_calculate_sample_size_rejects_two_part_allocation_for_groups_gt_2() -> None:
     with pytest.raises(
         ValueError,
@@ -69,7 +84,7 @@ def test_calculate_sample_size_rejects_two_part_allocation_for_groups_gt_2() -> 
 def test_calculate_sample_size_rejects_three_part_allocation_today() -> None:
     with pytest.raises(
         ValueError,
-        match=r"Allocation has 3 values but groups=2\.",
+        match=r"For 2 groups, provide exactly two values like 'control:treatment'",
     ):
         calculate_sample_size(
             SampleSizeInput(
@@ -100,6 +115,6 @@ def test_parse_allocation_two_part_for_two_groups() -> None:
 def test_parse_allocation_rejects_two_part_for_groups_gt_2() -> None:
     with pytest.raises(
         ValueError,
-        match=r"Allocation has 2 values but groups=4\.",
+        match=r"For groups > 2, provide exactly one value per group",
     ):
         _parse_allocation("40:60", groups=4)

@@ -66,6 +66,21 @@ def test_calculate_sample_size_rejects_non_uniform_treatment_allocations() -> No
         )
 
 
+def test_calculate_sample_size_rejects_almost_uniform_treatment_allocations() -> None:
+    with pytest.raises(
+        ValueError,
+        match=r"Non-uniform treatment allocations are not supported yet\.",
+    ):
+        calculate_sample_size(
+            SampleSizeInput(
+                groups=3,
+                baseline_rate_pct=10.0,
+                mde_pct=2.0,
+                allocation="1:1:1.0000000000001",
+            )
+        )
+
+
 def test_calculate_sample_size_rejects_two_part_allocation_for_groups_gt_2() -> None:
     with pytest.raises(
         ValueError,

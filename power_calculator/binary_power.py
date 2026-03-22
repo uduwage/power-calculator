@@ -283,7 +283,8 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     control_share = allocation_shares[0]
     treatment_shares = allocation_shares[1:]
 
-    if len({round(share, 12) for share in treatment_shares}) != 1:
+    first_treatment_share = treatment_shares[0]
+    if any(share != first_treatment_share for share in treatment_shares[1:]):
         raise ValueError("Non-uniform treatment allocations are not supported yet.")
 
     pair_total = control_share + treatment_shares[0]

@@ -99,8 +99,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--allocation",
         default="50:50",
         help=(
-            "Allocation ratio. For groups=2 use control:treatment (50:50). "
-            "For groups>2 use control:t1:t2:... (e.g. 50:25:25)."
+            "Allocation ratio between groups. "
+            "Default is '50:50' for --groups 2 (control:treatment). "
+            "For --groups > 2, pass an explicit allocation with exactly --groups "
+            "values in control:t1:t2:... form (e.g. '50:25:25' for --groups 3); "
+            "'50:50' is invalid in that case."
         ),
     )
     parser.add_argument(

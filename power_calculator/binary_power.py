@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import log
 from math import ceil, sqrt
-from typing import Tuple
 
 Alternative = str
 Correction = str
@@ -59,32 +58,58 @@ class SampleSizeResult:
     overall_total: int
 
 
-def _parse_allocation(allocation: str) -> Tuple[float, float]:
-    """Parse a control:treatment allocation string.
+def _parse_allocation(allocation: str, groups: int) -> list[float]:
+    """Parse allocation into normalized per-group shares.
+
+    Supported input forms:
+    - groups=2: `control:treatment` (e.g. `50:50`)
+    - groups>2: explicit `control:t1:t2:...` with exactly `groups` values
+      (e.g. `50:25:25` for 3 groups).
 
     Args:
-        allocation: Allocation text in `control:treatment` format.
+        allocation: Allocation text separated by `:`.
+        groups: Total number of experiment groups, including control.
 
     Returns:
-        Normalized control and treatment shares that sum to 1.
+        Normalized per-group shares as `[control, treatment_1, ...]`.
 
     Raises:
-        ValueError: If format is invalid or values are non-positive.
+        ValueError: If parsing fails, count does not match allowed formats,
+            or any value is non-positive.
     """
     try:
-        control_text, treatment_text = allocation.split(":")
-        control = float(control_text.strip())
-        treatment = float(treatment_text.strip())
-    except (ValueError, AttributeError) as exc:
+        weights = [float(part.strip()) for part in allocation.split(":")]
+    except (AttributeError, ValueError) as exc:
         raise ValueError(
-            "Allocation must be in 'control:treatment' format (e.g. 50:50)."
+            "Allocation must be in 'control:treatment' or "
+            "'control:t1:t2:...' format (i.e. 50:50 or 33:33:34)."
         ) from exc
 
-    if control <= 0 or treatment <= 0:
-        raise ValueError("Allocation values must both be positive.")
+    if len(weights) < 2:
+        raise ValueError("Allocation must include at least control and one treatment.")
+    if any(weight <= 0 for weight in weights):
+        raise ValueError("Allocation values must all be positive.")
 
-    total = control + treatment
-    return control / total, treatment / total
+    if len(weights) == 2 and groups == 2:
+        expanded = weights
+    elif len(weights) == groups:
+        expanded = weights
+    else:
+        if groups == 2:
+            guidance = (
+                "For 2 groups, provide exactly two values like "
+                "'control:treatment' (e.g. 50:50)."
+            )
+        else:
+            guidance = (
+                "For groups > 2, provide exactly one value per group "
+                "(e.g. 50:25:25)."
+            )
+        raise ValueError(
+            f"Allocation has {len(weights)} values but groups={groups}. " + guidance
+        )
+    total = sum(expanded)
+    return [weight / total for weight in expanded]
 
 
 def _adjusted_alpha(
@@ -144,6 +169,10 @@ def _normal_ppf(probability: float) -> float:
     """Inverse CDF for standard normal distribution.
 
     Rational approximation from Peter John Acklam's algorithm.
+    TODO: It looks like SciPy supports this approximation calculation.
+    Once SciPy is added as a dependency in the future, consider delegating
+    to its normal inverse CDF implementation (such as
+    `scipy.stats.norm.ppf`) instead of maintaining this approximation.
 
     Args:
         probability: Probability in the open interval `(0, 1)`.
@@ -250,7 +279,17 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     if not (0 < config.mde_pct < 100):
         raise ValueError("mde_pct must be between 0 and 100.")
 
-    control_alloc, treatment_alloc = _parse_allocation(config.allocation)
+    allocation_shares = _parse_allocation(config.allocation, config.groups)
+    control_share = allocation_shares[0]
+    treatment_shares = allocation_shares[1:]
+
+    first_treatment_share = treatment_shares[0]
+    if any(share != first_treatment_share for share in treatment_shares[1:]):
+        raise ValueError("Non-uniform treatment allocations are not supported yet.")
+
+    pair_total = control_share + treatment_shares[0]
+    control_alloc = control_share / pair_total
+    treatment_alloc = treatment_shares[0] / pair_total
     ratio = treatment_alloc / control_alloc
 
     baseline = config.baseline_rate_pct / 100.0

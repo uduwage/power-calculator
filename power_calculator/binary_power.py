@@ -8,8 +8,7 @@ Notes:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import log
-from math import ceil, sqrt
+from math import ceil, log, sqrt
 
 Alternative = str
 Correction = str
@@ -90,9 +89,7 @@ def _parse_allocation(allocation: str, groups: int) -> list[float]:
     if any(weight <= 0 for weight in weights):
         raise ValueError("Allocation values must all be positive.")
 
-    if len(weights) == 2 and groups == 2:
-        expanded = weights
-    elif len(weights) == groups:
+    if len(weights) == 2 and groups == 2 or len(weights) == groups:
         expanded = weights
     else:
         if groups == 2:
@@ -187,7 +184,6 @@ def _normal_ppf(probability: float) -> float:
         - Acklam, P. J. (2000). Inverse normal CDF approximation note.
           http://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/
     """
-
     if not (0 < probability < 1):
         raise ValueError("probability must be in (0, 1).")
 
@@ -267,7 +263,6 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
         - Fleiss, J. L., Tytun, A., & Ury, H. K. (1980).
           https://doi.org/10.2307/2529990
     """
-
     if not (0 < config.confidence_level < 1):
         raise ValueError("confidence_level must be between 0 and 1.")
     if not (0 < config.power < 1):

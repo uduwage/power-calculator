@@ -76,8 +76,7 @@ def test_cli_rejects_two_part_allocation_for_groups_gt_2(capsys) -> None:
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "power-calculator: error: Allocation has 2 values but groups=3."
-        in captured.err
+        "power-calculator: error: Allocation has 2 values but groups=3." in captured.err
     )
 
 
@@ -99,6 +98,5 @@ def test_cli_rejects_three_part_allocation_for_two_groups(capsys) -> None:
     assert exit_code == 2
     assert captured.out == ""
     assert (
-        "power-calculator: error: Allocation has 3 values but groups=2."
-        in captured.err
+        "power-calculator: error: Allocation has 3 values but groups=2." in captured.err
     )

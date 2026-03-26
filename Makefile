@@ -14,9 +14,9 @@ IMAGE_NAME ?= power-calculator:latest
 format.black:
 	poetry run black $(SOURCE_OBJECTS)
 
-# Auto-fix lint issues with Ruff where possible.
+# Auto-fix Ruff issues across the repository where possible.
 format.ruff:
-	poetry run ruff check --silent --fix $(SOURCE_OBJECTS)
+	poetry run ruff check --silent --fix .
 
 # Run all formatting steps.
 format: format.ruff format.black
@@ -25,9 +25,9 @@ format: format.ruff format.black
 lints.format_check:
 	poetry run black --check $(SOURCE_OBJECTS)
 
-# Run Ruff lint checks.
+# Run Ruff lint checks across the repository.
 lints.ruff:
-	poetry run ruff check $(SOURCE_OBJECTS)
+	poetry run ruff check .
 
 # Run static type checks with mypy.
 lints.mypy:

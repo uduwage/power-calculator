@@ -41,7 +41,7 @@ power-calculator/
 |   |-- duration.py         # Duration estimators (total/equal-group/by-group)
 |   |-- cli.py              # CLI entrypoint and argument parsing
 |-- pyproject.toml          # Poetry config, dependencies, tool settings
-|-- Makefile                # Format/lint/docker helper commands
+|-- Makefile                # Setup/format/lint/docker helper commands
 |-- Dockerfile              # Container image definition
 |-- .dockerignore           # Docker build context exclusions
 |-- README.md               # Usage and setup documentation
@@ -53,9 +53,27 @@ power-calculator/
 ### Prerequisites
 
 - Python `>=3.10,<3.13`
+- `asdf` (required for `make setup` / `make setup.sysdeps`)
 - `pip` or `poetry`
 
-### Option 1: Poetry (recommended)
+### Option 1: Make setup targets (recommended for contributors)
+
+```bash
+git clone git@github.com:uduwage/power-calculator.git
+cd power-calculator
+make setup
+poetry run power-calculator --help
+```
+
+Available setup targets:
+
+- `make setup`: run full setup (`setup.sysdeps`, `setup.python`, `setup.project`)
+- `make setup.sysdeps`: install/update tools from `.tool-versions` via `asdf`
+- `make setup.python`: validate active Python and bind Poetry env to it
+- `make setup.project`: install project dependencies with Poetry
+- `make setup.uninstall`: remove project virtualenv
+
+### Option 2: Poetry only
 
 ```bash
 git clone git@github.com:uduwage/power-calculator.git
@@ -64,7 +82,7 @@ poetry install
 poetry run power-calculator --help
 ```
 
-### Option 2: pip (editable install)
+### Option 3: pip (editable install)
 
 ```bash
 git clone git@github.com:uduwage/power-calculator.git
@@ -81,7 +99,7 @@ power-calculator --help
 python -m power_calculator.cli --help
 ```
 
-### Option 3: Docker
+### Option 4: Docker
 
 Build image:
 
@@ -322,6 +340,19 @@ Install dev dependencies:
 poetry install
 ```
 
+Run formatting/lint checks with Make:
+
+```bash
+make format
+make lints
+make lints.ci
+```
+
+Notes:
+
+- `make lints.ruff` runs `ruff check .` across the whole repository (source + tests).
+- `make lints.dockerfile` runs only if `hadolint` is installed.
+
 Run tests:
 
 ```bash
@@ -360,8 +391,9 @@ poetry run ruff --version
 poetry run black --version
 poetry run mypy --version
 
-# 6) Run format
+# 6) Run format + lints
 make format
+make lints
 ```
 
 ## License

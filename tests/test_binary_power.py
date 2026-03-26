@@ -6,6 +6,7 @@ from power_calculator.binary_power import (
     calculate_sample_size,
 )
 
+
 def test_calculate_sample_size_ab_50_50_current_behavior() -> None:
     result = calculate_sample_size(
         SampleSizeInput(
@@ -27,6 +28,7 @@ def test_calculate_sample_size_ab_50_50_current_behavior() -> None:
     assert result.treatment_sample_size == 3841
     assert result.per_comparison_total == 7682
     assert result.overall_total == 7682
+
 
 def test_calculate_sample_size_groups_gt_2_with_explicit_allocation() -> None:
     result = calculate_sample_size(
@@ -109,6 +111,7 @@ def test_calculate_sample_size_rejects_three_part_allocation_today() -> None:
                 allocation="33:33:34",
             )
         )
+
 
 def test_parse_allocation_explicit_multivariant() -> None:
     shares = _parse_allocation("33:33:34", groups=3)

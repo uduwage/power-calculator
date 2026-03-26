@@ -6,9 +6,9 @@ Notes:
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from math import ceil, isclose
-from typing import Dict, Mapping
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class GroupDurationEstimate:
     """
 
     expected_daily_eligible_users: float
-    days_per_group: Dict[str, int]
+    days_per_group: dict[str, int]
     days_required: int
 
 
@@ -138,7 +138,6 @@ def estimate_duration_by_group(
         ValueError: If mappings are empty, keys do not match, shares are invalid,
             or input values are outside valid ranges.
     """
-
     if not group_sample_sizes:
         raise ValueError("group_sample_sizes must not be empty.")
     if set(group_sample_sizes.keys()) != set(traffic_shares.keys()):
@@ -157,7 +156,7 @@ def estimate_duration_by_group(
         raise ValueError("traffic_shares must sum to 1.")
 
     daily_eligible = _validate_daily_inputs(daily_users, eligible_rate)
-    days_per_group: Dict[str, int] = {}
+    days_per_group: dict[str, int] = {}
     for group, sample_size in group_sample_sizes.items():
         days_per_group[group] = ceil(
             sample_size / (daily_eligible * traffic_shares[group])
@@ -201,7 +200,7 @@ def estimate_duration_days_custom_split(
     daily_eligible_users: float,
     traffic_shares: Mapping[str, float],
     eligibility_fraction: float = 1.0,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Backward-compatible wrapper for custom-split duration estimation.
 
     Args:

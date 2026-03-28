@@ -26,6 +26,14 @@ coverage-junit-*.xml
 coverage-report-*.xml
 flake8-output.txt
 
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ruff
+.ruff_cache/
+
 #IDE
 .idea/
 .vscode/settings.json

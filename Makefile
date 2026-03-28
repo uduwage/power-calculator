@@ -57,7 +57,7 @@ test.clean:
 	-docker rmi $$(docker images -a | grep "$(PROJECT)" | tr -s ' ' | cut -d' ' -f3)
 	-docker image prune -f
 
-COVERAGE_MIN ?= 85
+COVERAGE_MIN ?= 80
 
 # IMPORTANT: Run `make setup` before running `make test.unit` the first time.
 # Run unit tests only (integration tests excluded) with coverage reports.

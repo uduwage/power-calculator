@@ -100,3 +100,54 @@ def test_cli_rejects_three_part_allocation_for_two_groups(capsys) -> None:
     assert (
         "power-calculator: error: Allocation has 3 values but groups=2." in captured.err
     )
+
+
+def test_cli_prints_duration_estimate_when_daily_users_provided(capsys) -> None:
+    exit_code = main(
+        [
+            "--groups",
+            "2",
+            "--baseline-rate",
+            "10",
+            "--mde",
+            "2",
+            "--allocation",
+            "50:50",
+            "--daily-users",
+            "5000",
+            "--eligible-rate",
+            "90",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Duration Estimate" in captured.out
+    assert "Daily users: 5,000.00" in captured.out
+    assert "Eligible rate: 90.00%" in captured.out
+    assert "Expected daily eligible users: 4,500.00" in captured.out
+    assert "Estimated duration:" in captured.out
+    assert "Bottleneck group:" in captured.out
+    assert captured.err == ""
+
+
+def test_cli_rejects_eligible_rate_without_daily_users(capsys) -> None:
+    exit_code = main(
+        [
+            "--groups",
+            "2",
+            "--baseline-rate",
+            "10",
+            "--mde",
+            "2",
+            "--allocation",
+            "50:50",
+            "--eligible-rate",
+            "90",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert captured.out == ""
+    assert "power-calculator: error: --eligible-rate requires --daily-users." in captured.err

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run lint checks
+        run: make lints.ci
+
+      - name: Run unit tests with coverage gate
+        run: |
+          poetry run pytest \
+            --ignore tests/integration \
+            --cov=./power_calculator \
+            --cov-fail-under=85 \
+            --cov-report=xml:coverage-report-unit-tests.xml \
+            --junitxml=coverage-junit-unit-tests.xml \
+            --cov-report=term
+
+      - name: Upload coverage/junit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            coverage-report-unit-tests.xml
+            coverage-junit-unit-tests.xml

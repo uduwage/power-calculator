@@ -1,0 +1,8 @@
+# Default owner for the entire repository
+* @uduwage
+
+# CI workflow ownership
+.github/workflows/* @uduwage
+
+# Source code ownership
+power_calculator/* @uduwage

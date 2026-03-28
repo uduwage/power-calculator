@@ -3,9 +3,11 @@ SHELL := /bin/sh
 SOURCE_OBJECTS ?= power_calculator
 DOCKERFILE ?= Dockerfile
 IMAGE_NAME ?= power-calculator:latest
+PROJECT ?= power-calculator
 
 .PHONY: \
 	setup setup.sysdeps setup.python setup.project setup.uninstall \
+	test.clean test.unit test.integration \
 	format format.black format.ruff \
 	lints lints.ci lints.format_check lints.ruff lints.mypy lints.dockerfile \
 	docker.build docker.run
@@ -48,6 +50,29 @@ lints: lints.format_check lints.ruff lints.mypy lints.dockerfile
 
 # CI lint set (excludes optional Dockerfile linting).
 lints.ci: lints.format_check lints.ruff lints.mypy
+
+# Stop containers/images for this project and clean dangling images.
+test.clean:
+	docker-compose down
+	-docker rmi $$(docker images -a | grep "$(PROJECT)" | tr -s ' ' | cut -d' ' -f3)
+	-docker image prune -f
+
+COVERAGE_MIN ?= 85
+
+# IMPORTANT: Run `make setup` before running `make test.unit` the first time.
+# Run unit tests only (integration tests excluded) with coverage reports.
+test.unit:
+	poetry run pytest \
+		--ignore tests/integration \
+		--cov=./power_calculator \
+		--cov-fail-under=$(COVERAGE_MIN) \
+		--cov-report=xml:coverage-report-unit-tests.xml \
+		--junitxml=coverage-junit-unit-tests.xml \
+		--cov-report term
+
+# Run integration tests only.
+test.integration:
+	poetry run pytest tests/integration
 
 # Bootstrap the full local development environment.
 setup: setup.sysdeps setup.python setup.project

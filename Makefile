@@ -3,7 +3,6 @@ SHELL := /bin/sh
 SOURCE_OBJECTS ?= power_calculator
 DOCKERFILE ?= Dockerfile
 IMAGE_NAME ?= power-calculator:latest
-PROJECT ?= power-calculator
 
 .PHONY: \
 	setup setup.sysdeps setup.python setup.project setup.uninstall \

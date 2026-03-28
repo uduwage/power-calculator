@@ -1,5 +1,11 @@
 # power-calculator
 
+[![CI](https://github.com/uduwage/power-calculator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/uduwage/power-calculator/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/uduwage/power-calculator/branch/main/graph/badge.svg)](https://codecov.io/gh/uduwage/power-calculator)
+[![Python](https://img.shields.io/badge/python-3.10%20to%203.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/power-calculator.svg)](https://pypi.org/project/power-calculator/)
+
 `power-calculator` is a Python tool for planning A/B(/n) experiments with **binary metrics** (for example: conversion, click-through, subscribe/not-subscribe).
 
 It helps you answer:

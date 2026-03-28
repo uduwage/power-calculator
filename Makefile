@@ -53,11 +53,22 @@ lints.ci: lints.format_check lints.ruff lints.mypy
 
 # Stop containers/images for this project and clean dangling images.
 test.clean:
-	docker-compose down
-	-docker rmi $$(docker images -a | grep "$(PROJECT)" | tr -s ' ' | cut -d' ' -f3)
-	-docker image prune -f
+	@if command -v docker-compose >/dev/null 2>&1; then \
+		docker-compose down || true; \
+	elif command -v docker >/dev/null 2>&1; then \
+		docker compose down || true; \
+	else \
+		echo "Skipping docker compose cleanup: docker-compose and docker are not installed"; \
+	fi
+	@if command -v docker >/dev/null 2>&1; then \
+		images=$$(docker images --filter=reference="$(IMAGE_NAME)" -q); \
+		if [ -n "$$images" ]; then docker rmi $$images || true; fi; \
+		docker image prune -f || true; \
+	else \
+		echo "Skipping docker image cleanup: docker is not installed"; \
+	fi
 
-COVERAGE_MIN ?= 80
+COVERAGE_MIN ?= 85
 
 # IMPORTANT: Run `make setup` before running `make test.unit` the first time.
 # Run unit tests only (integration tests excluded) with coverage reports.

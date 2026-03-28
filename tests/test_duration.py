@@ -8,25 +8,36 @@ from power_calculator.duration import (
     estimate_duration_equal_groups,
 )
 
+
 def test_estimate_duration_success_rounds_up() -> None:
-    result = estimate_duration(total_sample_size=1000, daily_users=333, eligible_rate=0.5)
+    result = estimate_duration(
+        total_sample_size=1000, daily_users=333, eligible_rate=0.5
+    )
     assert result.total_sample_size == 1000
     assert result.expected_daily_eligible_users == pytest.approx(166.5)
     assert result.days_required == 7
 
-def test_estimate_duration_rejects_invalid_total_sample_size() -> None: 
+
+def test_estimate_duration_rejects_invalid_total_sample_size() -> None:
     with pytest.raises(ValueError, match="total_sample_size must be positive"):
         estimate_duration(total_sample_size=0, daily_users=1000, eligible_rate=1.0)
+
 
 @pytest.mark.parametrize("daily_users", [0, -10])
 def test_estimate_duration_rejects_invalid_daily_users(daily_users: float) -> None:
     with pytest.raises(ValueError, match="daily_users must be positive"):
-        estimate_duration(total_sample_size=100, daily_users=daily_users, eligible_rate=1.0)
+        estimate_duration(
+            total_sample_size=100, daily_users=daily_users, eligible_rate=1.0
+        )
+
 
 @pytest.mark.parametrize("eligible_rate", [0, -0.1, 1.1])
 def test_estimate_duration_rejects_invalid_eligible_rate(eligible_rate: float) -> None:
     with pytest.raises(ValueError, match="eligible_rate must be in"):
-        estimate_duration(total_sample_size=100, daily_users=1000, eligible_rate=eligible_rate)
+        estimate_duration(
+            total_sample_size=100, daily_users=1000, eligible_rate=eligible_rate
+        )
+
 
 def test_estimate_duration_equal_groups_success() -> None:
     result = estimate_duration_equal_groups(
@@ -35,11 +46,13 @@ def test_estimate_duration_equal_groups_success() -> None:
     assert result.total_sample_size == 1500
     assert result.days_required == 3
 
+
 def test_estimate_duration_equal_groups_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="per_group_sample_size must be positive"):
         estimate_duration_equal_groups(0, 2, 1000, 1.0)
     with pytest.raises(ValueError, match="groups must be at least 2"):
         estimate_duration_equal_groups(100, 1, 1000, 1.0)
+
 
 def test_estimate_duration_by_group_success() -> None:
     result = estimate_duration_by_group(
@@ -51,6 +64,7 @@ def test_estimate_duration_by_group_success() -> None:
     assert result.expected_daily_eligible_users == pytest.approx(500.0)
     assert result.days_per_group == {"control": 5, "treatment_1": 4}
     assert result.days_required == 5
+
 
 def test_estimate_duration_by_group_rejects_empty_sample_sizes() -> None:
     with pytest.raises(ValueError, match="group_sample_sizes must not be empty"):
@@ -65,6 +79,7 @@ def test_estimate_duration_by_group_rejects_mismatched_keys() -> None:
             {"control": 0.5, "treatment_2": 0.5},
             1.0,
         )
+
 
 def test_estimate_duration_by_group_rejects_invalid_values() -> None:
     with pytest.raises(ValueError, match="sample sizes must be positive"):
@@ -88,6 +103,7 @@ def test_estimate_duration_by_group_rejects_invalid_values() -> None:
             {"control": 0.3, "treatment_1": 0.3},
             1.0,
         )
+
 
 def test_backward_compatible_wrappers() -> None:
     days = estimate_duration_days_equal_groups(

@@ -150,4 +150,7 @@ def test_cli_rejects_eligible_rate_without_daily_users(capsys) -> None:
 
     assert exit_code == 2
     assert captured.out == ""
-    assert "power-calculator: error: --eligible-rate requires --daily-users." in captured.err
+    assert (
+        "power-calculator: error: --eligible-rate requires --daily-users."
+        in captured.err
+    )

@@ -241,6 +241,21 @@ This prints a `Duration Estimate` section with:
 - estimated duration in days
 - bottleneck group (for multi-group/custom allocation cases)
 
+### Example: A/B/C sample size + duration together
+
+```bash
+python -m power_calculator.cli \
+  --alternative two-sided \
+  --confidence 95 \
+  --power 80 \
+  --groups 3 \
+  --baseline-rate 10 \
+  --mde 1 \
+  --allocation 34:33:33 \
+  --daily-users 50000 \
+  --eligible-rate 4
+```
+
 ### Example: Set every input parameter (all non-default values)
 
 ```bash

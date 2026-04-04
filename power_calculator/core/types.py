@@ -3,7 +3,7 @@ from typing import Literal
 
 MetricFamily = Literal[
     "binary",
-    "continous_mean"
+    "continuous_mean",
     "count_mean",
     "ratio_mean",
 ]

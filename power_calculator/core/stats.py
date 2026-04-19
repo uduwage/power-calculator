@@ -1,7 +1,11 @@
 """Shared statistical utilities for power and sample size calculations."""
+
 from __future__ import annotations
+
 from math import log, sqrt
+
 from .types import Alternative, Correction
+
 
 def _adjusted_alpha(
     alpha: float, groups: int, correction: Correction
@@ -35,6 +39,7 @@ def _adjusted_alpha(
         return 1 - (1 - alpha) ** (1 / comparisons), comparisons
     raise ValueError(f"Unsupported correction: {correction}")
 
+
 def _critical_z(alpha: float, alternative: Alternative) -> float:
     """Return critical z-value for the configured alternative hypothesis.
 
@@ -60,7 +65,7 @@ def _normal_ppf(probability: float) -> float:
 
     Rational approximation from Peter John Acklam's algorithm.
     TODO: It looks like SciPy supports this approximation calculation.
-    Once the refactoring is done look into this. 
+    Once the refactoring is done look into this.
     Also, Once SciPy is added as a dependency in the future, consider delegating
     to its normal inverse CDF implementation (such as
     `scipy.stats.norm.ppf`) instead of maintaining this approximation.
@@ -133,6 +138,7 @@ def _normal_ppf(probability: float) -> float:
     return (
         (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q
     ) / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+
 
 __all__ = [
     "_adjusted_alpha",

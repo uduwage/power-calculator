@@ -1,4 +1,7 @@
+"""Shared type vocabulary for experiment design and metric families."""
+
 from __future__ import annotations
+
 from typing import Literal
 
 MetricFamily = Literal[

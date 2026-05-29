@@ -8,10 +8,16 @@ Notes:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import ceil, sqrt
 
-from power_calculator.core.allocation import _parse_allocation
-from power_calculator.core.stats import _adjusted_alpha, _critical_z, _normal_ppf
+from power_calculator.core.allocation import (
+    _parse_allocation as _parse_shared_allocation,
+)
+from power_calculator.core.binary import calculate_binary_sample_size_details
+from power_calculator.core.models import (
+    BinaryDesignInputs,
+    DesignRequest,
+    ExperimentDesignSettings,
+)
 from power_calculator.core.types import Alternative, Correction
 
 
@@ -58,6 +64,11 @@ class SampleSizeResult:
     overall_total: int
 
 
+def _parse_allocation(allocation: str, groups: int) -> list[float]:
+    """Backward-compatible import location for allocation parsing."""
+    return _parse_shared_allocation(allocation, groups)
+
+
 def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
     """Calculate minimum sample size for binary A/B(/n) tests.
 
@@ -80,71 +91,34 @@ def calculate_sample_size(config: SampleSizeInput) -> SampleSizeResult:
         - Fleiss, J. L., Tytun, A., & Ury, H. K. (1980).
           https://doi.org/10.2307/2529990
     """
-    if not (0 < config.confidence_level < 1):
-        raise ValueError("confidence_level must be between 0 and 1.")
-    if not (0 < config.power < 1):
-        raise ValueError("power must be between 0 and 1.")
-    if config.groups < 2:
-        raise ValueError("groups must be at least 2.")
-    if not (0 < config.baseline_rate_pct < 100):
-        raise ValueError("baseline_rate_pct must be between 0 and 100.")
-    if not (0 < config.mde_pct < 100):
-        raise ValueError("mde_pct must be between 0 and 100.")
-
-    allocation_shares = _parse_allocation(config.allocation, config.groups)
-    control_share = allocation_shares[0]
-    treatment_shares = allocation_shares[1:]
-
-    first_treatment_share = treatment_shares[0]
-    if any(share != first_treatment_share for share in treatment_shares[1:]):
-        raise ValueError("Non-uniform treatment allocations are not supported yet.")
-
-    pair_total = control_share + treatment_shares[0]
-    control_alloc = control_share / pair_total
-    treatment_alloc = treatment_shares[0] / pair_total
-    ratio = treatment_alloc / control_alloc
-
-    baseline = config.baseline_rate_pct / 100.0
-    mde = config.mde_pct / 100.0
-    variant = baseline + mde
-    if not (0 < variant < 1):
-        raise ValueError(
-            "baseline_rate_pct + mde_pct must stay below 100%. "
-            "Use an MDE that keeps the treatment rate in (0, 100)."
-        )
-
-    alpha = 1 - config.confidence_level
-    adjusted_alpha, comparisons = _adjusted_alpha(
-        alpha, config.groups, config.correction
+    request = DesignRequest(
+        metric_family="binary",
+        settings=ExperimentDesignSettings(
+            alternative=config.alternative,
+            confidence_level=config.confidence_level,
+            power=config.power,
+            groups=config.groups,
+            correction=config.correction,
+            allocation=config.allocation,
+        ),
+        inputs=BinaryDesignInputs(
+            baseline_rate_pct=config.baseline_rate_pct,
+            mde_pct=config.mde_pct,
+        ),
     )
-    if not (0 < adjusted_alpha < 1):
-        raise ValueError("Adjusted alpha is invalid. Check groups/correction values.")
-
-    z_alpha = _critical_z(adjusted_alpha, config.alternative)
-    z_beta = _normal_ppf(config.power)
-
-    pooled = (baseline + variant) / 2
-    null_term = z_alpha * sqrt((1 + ratio) * pooled * (1 - pooled))
-    alt_term = z_beta * sqrt(
-        ratio * baseline * (1 - baseline) + variant * (1 - variant)
-    )
-
-    n_control = ceil(((null_term + alt_term) ** 2) / (ratio * (mde**2)))
-    n_treatment = ceil(n_control * ratio)
-    per_comparison_total = n_control + n_treatment
-    overall_total = n_control + (config.groups - 1) * n_treatment
+    details = calculate_binary_sample_size_details(request)
 
     return SampleSizeResult(
-        alpha=alpha,
-        adjusted_alpha=adjusted_alpha,
-        comparisons=comparisons,
-        control_allocation=control_alloc,
-        treatment_allocation=treatment_alloc,
-        baseline_rate=baseline,
-        variant_rate=variant,
-        mde=mde,
-        control_sample_size=n_control,
-        treatment_sample_size=n_treatment,
-        per_comparison_total=per_comparison_total,
-        overall_total=overall_total,
+        alpha=details.alpha,
+        adjusted_alpha=details.adjusted_alpha,
+        comparisons=details.comparisons,
+        control_allocation=details.control_allocation,
+        treatment_allocation=details.treatment_allocation,
+        baseline_rate=details.baseline_rate,
+        variant_rate=details.variant_rate,
+        mde=details.mde,
+        control_sample_size=details.control_sample_size,
+        treatment_sample_size=details.treatment_sample_size,
+        per_comparison_total=details.per_comparison_total,
+        overall_total=details.overall_total,
     )

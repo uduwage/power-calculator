@@ -1,4 +1,6 @@
+import power_calculator.cli as cli_module
 from power_calculator.cli import main
+from power_calculator.core.models import DesignSampleSizeResult
 
 
 def test_cli_50_50_current_behavior(capsys) -> None:
@@ -154,3 +156,53 @@ def test_cli_rejects_eligible_rate_without_daily_users(capsys) -> None:
         "power-calculator: error: --eligible-rate requires --daily-users."
         in captured.err
     )
+
+
+def test_cli_routes_through_shared_binary_calculator(monkeypatch, capsys) -> None:
+    seen_request = {}
+
+    class FakeBinaryDesignCalculator:
+        def calculate_sample_size(self, request) -> DesignSampleSizeResult:
+            seen_request["request"] = request
+            return DesignSampleSizeResult(
+                metric_family="binary",
+                group_sample_sizes={"control": 111, "treatment_1": 222},
+                overall_total=333,
+                per_comparison_total=333,
+                alpha=0.05,
+                adjusted_alpha=0.05,
+                comparisons=1,
+            )
+
+    monkeypatch.setattr(
+        cli_module,
+        "BinaryDesignCalculator",
+        FakeBinaryDesignCalculator,
+    )
+
+    exit_code = main(
+        [
+            "--alternative",
+            "two-sided",
+            "--confidence",
+            "95",
+            "--power",
+            "80",
+            "--groups",
+            "2",
+            "--baseline-rate",
+            "10",
+            "--mde",
+            "2",
+            "--allocation",
+            "50:50",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert seen_request["request"].metric_family == "binary"
+    assert seen_request["request"].settings.confidence_level == 0.95
+    assert seen_request["request"].inputs.baseline_rate_pct == 10.0
+    assert "Required control sample size: 111" in captured.out
+    assert "Required sample size per treatment group: 222" in captured.out

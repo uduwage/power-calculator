@@ -33,9 +33,14 @@ It helps you answer:
 
 ## Project Structure
 
-- `power_calculator/binary_power.py`: sample-size engine
+- `power_calculator/core/`: shared experiment design architecture and metric-family implementations
+- `power_calculator/core/binary.py`: shared binary sample-size implementation
+- `power_calculator/binary_power.py`: backward-compatible binary API wrapper
 - `power_calculator/duration.py`: consolidated duration calculations
-- `power_calculator/cli.py`: command-line interface
+- `power_calculator/cli.py`: command-line interface routed through the shared binary design path
+
+The public package API remains binary-first for now, while the shared `core/`
+modules stay internal as the broader multi-metric architecture takes shape.
 
 ## Repository Layout
 
@@ -43,7 +48,14 @@ It helps you answer:
 power-calculator/
 |-- power_calculator/
 |   |-- __init__.py         # Public package exports
-|   |-- binary_power.py     # Binary metric sample-size calculations
+|   |-- binary_power.py     # Backward-compatible binary API wrapper
+|   |-- core/
+|   |   |-- allocation.py   # Shared allocation parsing helpers
+|   |   |-- base.py         # Shared metric-family calculator contract
+|   |   |-- binary.py       # Shared binary metric-family implementation
+|   |   |-- models.py       # Shared design request/result models
+|   |   |-- stats.py        # Shared statistical helpers
+|   |   |-- types.py        # Shared type vocabulary
 |   |-- duration.py         # Duration estimators (total/equal-group/by-group)
 |   |-- cli.py              # CLI entrypoint and argument parsing
 |-- pyproject.toml          # Poetry config, dependencies, tool settings

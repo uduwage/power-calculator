@@ -1,4 +1,9 @@
-"""power_calculator package."""
+"""Stable public package exports for ``power_calculator``.
+
+During Phase 0 refactoring, keep the top-level package surface aligned with the
+existing binary-first API. Shared core modules remain internal until they are
+intentionally promoted.
+"""
 
 from power_calculator.binary_power import (
     SampleSizeInput,

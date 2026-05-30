@@ -90,9 +90,7 @@ def _validate_binary_cli_result(result: DesignSampleSizeResult) -> None:
     if result.adjusted_alpha is None:
         raise ValueError("Binary design calculator returned no adjusted alpha.")
     if result.per_comparison_total is None:
-        raise ValueError(
-            "Binary design calculator returned no per-comparison total."
-        )
+        raise ValueError("Binary design calculator returned no per-comparison total.")
 
 
 def build_parser() -> argparse.ArgumentParser:

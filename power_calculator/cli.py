@@ -83,14 +83,17 @@ def _get_pairwise_binary_allocation(
     return control_share / pair_total, first_treatment_share / pair_total
 
 
-def _validate_binary_cli_result(result: DesignSampleSizeResult) -> None:
-    """Validate fields the current binary CLI expects from the shared result."""
+def _get_required_binary_cli_result_fields(
+    result: DesignSampleSizeResult,
+) -> tuple[float, float, int]:
+    """Return the non-optional shared result fields required by the binary CLI."""
     if result.alpha is None:
         raise ValueError("Binary design calculator returned no raw alpha.")
     if result.adjusted_alpha is None:
         raise ValueError("Binary design calculator returned no adjusted alpha.")
     if result.per_comparison_total is None:
         raise ValueError("Binary design calculator returned no per-comparison total.")
+    return result.alpha, result.adjusted_alpha, result.per_comparison_total
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -196,7 +199,9 @@ def main(argv: list[str] | None = None) -> int:
         request = _build_binary_design_request(args, confidence, power)
         calculator = BinaryDesignCalculator()
         result = calculator.calculate_sample_size(request)
-        _validate_binary_cli_result(result)
+        raw_alpha, adjusted_alpha, per_comparison_total = (
+            _get_required_binary_cli_result_fields(result)
+        )
         allocation_shares = _parse_allocation(
             request.settings.allocation, request.settings.groups
         )
@@ -234,8 +239,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Power (1-beta): {power:.2%}")
     print(f"Groups: {args.groups}")
     print(f"Multiple testing correction: {args.correction}")
-    print(f"Raw alpha: {result.alpha:.4f}")
-    print(f"Adjusted alpha: {result.adjusted_alpha:.4f}")
+    print(f"Raw alpha: {raw_alpha:.4f}")
+    print(f"Adjusted alpha: {adjusted_alpha:.4f}")
     print(f"Comparisons: {result.comparisons}")
     print(
         f"Allocation (control:treatment): "
@@ -247,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print(f"Required control sample size: {control_sample_size:,}")
     print(f"Required sample size per treatment group: {treatment_sample_size:,}")
-    print(f"Total per control-vs-treatment comparison: {result.per_comparison_total:,}")
+    print(f"Total per control-vs-treatment comparison: {per_comparison_total:,}")
     print(f"Overall total sample size across all groups: {result.overall_total:,}")
     if duration is not None:
         print()

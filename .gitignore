@@ -37,3 +37,6 @@ dmypy.json
 #IDE
 .idea/
 .vscode/settings.json
+
+# Notes thoughts and research
+notes/

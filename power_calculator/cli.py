@@ -10,7 +10,14 @@ from __future__ import annotations
 import argparse
 import sys
 
-from power_calculator.binary_power import SampleSizeInput, calculate_sample_size
+from power_calculator.core.allocation import _parse_allocation
+from power_calculator.core.binary import BinaryDesignCalculator
+from power_calculator.core.models import (
+    BinaryDesignInputs,
+    DesignRequest,
+    DesignSampleSizeResult,
+    ExperimentDesignSettings,
+)
 from power_calculator.duration import estimate_duration_by_group
 
 
@@ -41,6 +48,52 @@ def _to_probability(value: float, flag_name: str, allow_one: bool = False) -> fl
             f"{flag_name} must be in (0, 1) " "(or percent form, excluding 0 and 100)."
         )
     return value
+
+
+def _build_binary_design_request(
+    args: argparse.Namespace,
+    confidence_level: float,
+    power: float,
+) -> DesignRequest[BinaryDesignInputs]:
+    """Build the shared binary design request used by the CLI."""
+    return DesignRequest(
+        metric_family="binary",
+        settings=ExperimentDesignSettings(
+            alternative=args.alternative,
+            confidence_level=confidence_level,
+            power=power,
+            groups=args.groups,
+            correction=args.correction,
+            allocation=args.allocation,
+        ),
+        inputs=BinaryDesignInputs(
+            baseline_rate_pct=args.baseline_rate,
+            mde_pct=args.mde,
+        ),
+    )
+
+
+def _get_pairwise_binary_allocation(
+    allocation_shares: list[float],
+) -> tuple[float, float]:
+    """Return pairwise control and treatment allocations for CLI display."""
+    control_share = allocation_shares[0]
+    first_treatment_share = allocation_shares[1]
+    pair_total = control_share + first_treatment_share
+    return control_share / pair_total, first_treatment_share / pair_total
+
+
+def _get_required_binary_cli_result_fields(
+    result: DesignSampleSizeResult,
+) -> tuple[float, float, int]:
+    """Return the non-optional shared result fields required by the binary CLI."""
+    if result.alpha is None:
+        raise ValueError("Binary design calculator returned no raw alpha.")
+    if result.adjusted_alpha is None:
+        raise ValueError("Binary design calculator returned no adjusted alpha.")
+    if result.per_comparison_total is None:
+        raise ValueError("Binary design calculator returned no per-comparison total.")
+    return result.alpha, result.adjusted_alpha, result.per_comparison_total
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -143,37 +196,33 @@ def main(argv: list[str] | None = None) -> int:
         eligible_rate = _to_probability(
             args.eligible_rate, "--eligible-rate", allow_one=True
         )
-        config = SampleSizeInput(
-            alternative=args.alternative,
-            confidence_level=confidence,
-            power=power,
-            groups=args.groups,
-            correction=args.correction,
-            baseline_rate_pct=args.baseline_rate,
-            mde_pct=args.mde,
-            allocation=args.allocation,
+        request = _build_binary_design_request(args, confidence, power)
+        calculator = BinaryDesignCalculator()
+        result = calculator.calculate_sample_size(request)
+        raw_alpha, adjusted_alpha, per_comparison_total = (
+            _get_required_binary_cli_result_fields(result)
         )
-        result = calculate_sample_size(config)
+        allocation_shares = _parse_allocation(
+            request.settings.allocation, request.settings.groups
+        )
+        control_allocation, treatment_allocation = _get_pairwise_binary_allocation(
+            allocation_shares
+        )
+        baseline_rate = request.inputs.baseline_rate_pct / 100.0
+        minimum_detectable_effect = request.inputs.mde_pct / 100.0
+        variant_rate = baseline_rate + minimum_detectable_effect
+        control_sample_size = result.group_sample_sizes["control"]
+        treatment_sample_size = result.group_sample_sizes["treatment_1"]
         duration = None
         if args.daily_users is not None:
             if args.daily_users <= 0:
                 raise ValueError("--daily-users must be positive.")
-            group_sample_sizes = {"control": result.control_sample_size}
-            for idx in range(1, args.groups):
-                group_sample_sizes[f"treatment_{idx}"] = result.treatment_sample_size
-
-            total_weight = result.control_allocation + (
-                (args.groups - 1) * result.treatment_allocation
-            )
-            control_share = result.control_allocation / total_weight
-            treatment_share = result.treatment_allocation / total_weight
-
-            traffic_shares = {"control": control_share}
-            for idx in range(1, args.groups):
-                traffic_shares[f"treatment_{idx}"] = treatment_share
+            traffic_shares = {"control": allocation_shares[0]}
+            for idx, traffic_share in enumerate(allocation_shares[1:], start=1):
+                traffic_shares[f"treatment_{idx}"] = traffic_share
 
             duration = estimate_duration_by_group(
-                group_sample_sizes=group_sample_sizes,
+                group_sample_sizes=result.group_sample_sizes,
                 daily_users=args.daily_users,
                 traffic_shares=traffic_shares,
                 eligible_rate=eligible_rate,
@@ -190,20 +239,20 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Power (1-beta): {power:.2%}")
     print(f"Groups: {args.groups}")
     print(f"Multiple testing correction: {args.correction}")
-    print(f"Raw alpha: {result.alpha:.4f}")
-    print(f"Adjusted alpha: {result.adjusted_alpha:.4f}")
+    print(f"Raw alpha: {raw_alpha:.4f}")
+    print(f"Adjusted alpha: {adjusted_alpha:.4f}")
     print(f"Comparisons: {result.comparisons}")
     print(
         f"Allocation (control:treatment): "
-        f"{result.control_allocation:.2%}:{result.treatment_allocation:.2%}"
+        f"{control_allocation:.2%}:{treatment_allocation:.2%}"
     )
-    print(f"Baseline rate: {result.baseline_rate:.2%}")
-    print(f"MDE: {result.mde:.2%}")
-    print(f"Implied treatment rate: {result.variant_rate:.2%}")
+    print(f"Baseline rate: {baseline_rate:.2%}")
+    print(f"MDE: {minimum_detectable_effect:.2%}")
+    print(f"Implied treatment rate: {variant_rate:.2%}")
     print()
-    print(f"Required control sample size: {result.control_sample_size:,}")
-    print(f"Required sample size per treatment group: {result.treatment_sample_size:,}")
-    print(f"Total per control-vs-treatment comparison: {result.per_comparison_total:,}")
+    print(f"Required control sample size: {control_sample_size:,}")
+    print(f"Required sample size per treatment group: {treatment_sample_size:,}")
+    print(f"Total per control-vs-treatment comparison: {per_comparison_total:,}")
     print(f"Overall total sample size across all groups: {result.overall_total:,}")
     if duration is not None:
         print()
